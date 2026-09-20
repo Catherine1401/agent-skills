@@ -1,0 +1,8 @@
+skills:
+  commit:
+    source: skills/commit
+    rules: shared-rules/commit.md
+    adapters:
+      codex: AGENTS.md
+      claude-code: CLAUDE.md
+      cursor: adapters/cursor/commit.mdc
