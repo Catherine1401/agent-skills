@@ -29,6 +29,49 @@ grep -Fq 'Respond in Vietnamese.' "$ags_tmp/.codex/AGENTS.md"
 HOME="$ags_tmp/copy-home" CLAUDE_CONFIG_DIR="$ags_tmp/copy-home/.claude" "$ags_root/install.sh" --agent claude --mode copy --no-rules
 [ -f "$ags_tmp/copy-home/.claude/skills/commit/SKILL.md" ]
 
+cp -R "$ags_root" "$ags_tmp/multi-repo"
+mkdir -p "$ags_tmp/multi-repo/skills/test-skill"
+cp "$ags_root/tests/fixtures/skills/test-skill/SKILL.md" "$ags_tmp/multi-repo/skills/test-skill/SKILL.md"
+printf '%s\n' '  test-skill:' '    source: skills/test-skill' >> "$ags_tmp/multi-repo/manifest.yaml"
+HOME="$ags_tmp/multi-home" CODEX_HOME="$ags_tmp/multi-home/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/multi-home/.claude" CURSOR_CONFIG_DIR="$ags_tmp/multi-home/.cursor" "$ags_tmp/multi-repo/install.sh" --agent all --no-rules
+for ags_agent_home in "$ags_tmp/multi-home/.codex" "$ags_tmp/multi-home/.claude" "$ags_tmp/multi-home/.cursor"; do
+  [ -L "$ags_agent_home/skills/commit" ]
+  [ -L "$ags_agent_home/skills/test-skill" ]
+done
+HOME="$ags_tmp/multi-copy-home" CLAUDE_CONFIG_DIR="$ags_tmp/multi-copy-home/.claude" "$ags_tmp/multi-repo/install.sh" --agent claude --mode copy --no-rules
+[ -f "$ags_tmp/multi-copy-home/.claude/skills/commit/SKILL.md" ]
+[ -f "$ags_tmp/multi-copy-home/.claude/skills/test-skill/SKILL.md" ]
+
+cp -R "$ags_root" "$ags_tmp/invalid-repo"
+printf '%s\n' '  missing:' '    source: skills/missing' >> "$ags_tmp/invalid-repo/manifest.yaml"
+if HOME="$ags_tmp/invalid-home" CODEX_HOME="$ags_tmp/invalid-home/.codex" "$ags_tmp/invalid-repo/install.sh" --agent codex --no-rules >/dev/null 2>&1; then
+  printf '%s\n' 'installer accepted a missing SKILL.md' >&2
+  exit 1
+fi
+[ ! -e "$ags_tmp/invalid-home/.codex/skills/commit" ]
+
+cp -R "$ags_root" "$ags_tmp/no-source-repo"
+printf '%s\n' '  no-source:' >> "$ags_tmp/no-source-repo/manifest.yaml"
+if HOME="$ags_tmp/no-source-home" CODEX_HOME="$ags_tmp/no-source-home/.codex" "$ags_tmp/no-source-repo/install.sh" --agent codex --no-rules >/dev/null 2>&1; then
+  printf '%s\n' 'installer accepted a skill without source' >&2
+  exit 1
+fi
+[ ! -e "$ags_tmp/no-source-home/.codex/skills/commit" ]
+
+cp -R "$ags_root" "$ags_tmp/duplicate-repo"
+printf '%s\n' '  commit:' '    source: skills/commit' >> "$ags_tmp/duplicate-repo/manifest.yaml"
+if HOME="$ags_tmp/duplicate-home" CODEX_HOME="$ags_tmp/duplicate-home/.codex" "$ags_tmp/duplicate-repo/install.sh" --agent codex --no-rules >/dev/null 2>&1; then
+  printf '%s\n' 'installer accepted a duplicate skill name' >&2
+  exit 1
+fi
+
+cp -R "$ags_root" "$ags_tmp/name-repo"
+printf '%s\n' '  Bad_name:' '    source: skills/Bad_name' >> "$ags_tmp/name-repo/manifest.yaml"
+if HOME="$ags_tmp/name-home" CODEX_HOME="$ags_tmp/name-home/.codex" "$ags_tmp/name-repo/install.sh" --agent codex --no-rules >/dev/null 2>&1; then
+  printf '%s\n' 'installer accepted an invalid skill name' >&2
+  exit 1
+fi
+
 git init --bare -q "$ags_tmp/remote.git"
 cp -R "$ags_root" "$ags_tmp/sync-repo"
 git -C "$ags_tmp/sync-repo" config user.name 'Installer Test'
@@ -42,13 +85,19 @@ git clone -q "$ags_tmp/remote.git" "$ags_tmp/upstream"
 git -C "$ags_tmp/upstream" config user.name 'Installer Test'
 git -C "$ags_tmp/upstream" config user.email 'installer@example.test'
 printf '%s\n' 'sync test' >> "$ags_tmp/upstream/README.md"
-git -C "$ags_tmp/upstream" add README.md
-git -C "$ags_tmp/upstream" commit -qm 'test: update remote'
+mkdir -p "$ags_tmp/upstream/skills/test-skill"
+cp "$ags_root/tests/fixtures/skills/test-skill/SKILL.md" "$ags_tmp/upstream/skills/test-skill/SKILL.md"
+printf '%s\n' '  test-skill:' '    source: skills/test-skill' >> "$ags_tmp/upstream/manifest.yaml"
+git -C "$ags_tmp/upstream" add README.md manifest.yaml skills/test-skill/SKILL.md
+git -C "$ags_tmp/upstream" commit -qm 'test: add remote skill'
 git -C "$ags_tmp/upstream" push -q origin main
 
 HOME="$ags_tmp/sync-home" CODEX_HOME="$ags_tmp/sync-home/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/sync-home/.claude" CURSOR_CONFIG_DIR="$ags_tmp/sync-home/.cursor" "$ags_tmp/sync-repo/install.sh" --agent all
 HOME="$ags_tmp/sync-home" CODEX_HOME="$ags_tmp/sync-home/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/sync-home/.claude" CURSOR_CONFIG_DIR="$ags_tmp/sync-home/.cursor" "$ags_tmp/sync-repo/sync.sh" --agent all
 [ "$(git -C "$ags_tmp/sync-repo" rev-parse HEAD)" = "$(git -C "$ags_tmp/upstream" rev-parse HEAD)" ]
+[ -L "$ags_tmp/sync-home/.codex/skills/test-skill" ]
+[ -L "$ags_tmp/sync-home/.claude/skills/test-skill" ]
+[ -L "$ags_tmp/sync-home/.cursor/skills/test-skill" ]
 printf '%s\n' 'dirty' >> "$ags_tmp/sync-repo/README.md"
 if HOME="$ags_tmp/sync-home" "$ags_tmp/sync-repo/sync.sh" >/dev/null 2>&1; then
   printf '%s\n' 'sync accepted a dirty repository' >&2

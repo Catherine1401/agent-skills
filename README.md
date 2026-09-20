@@ -44,6 +44,23 @@ vẫn yêu cầu duyệt trước mỗi commit và chỉ push khi bạn yêu c�
 Các rule được cài cho mọi agent: trả lời bằng tiếng Việt; cập nhật skill với
 text tối thiểu, ưu tiên quyết định thực thi của agent; và commit có phạm vi hẹp.
 
+## Thêm skill mới
+
+Tạo `skills/<tên>/SKILL.md`, rồi khai báo nó trong `manifest.yaml`. Installer
+cài mọi skill trong section `skills` cho Codex, Claude Code và Cursor:
+
+```yaml
+skills:
+  commit:
+    source: skills/commit
+  release:
+    source: skills/release
+```
+
+Tên entry phải là lowercase/kebab-case, trùng tên thư mục source, và source phải
+có `SKILL.md`. Chạy `./tests/test-install.sh` trước khi commit. Máy khác sẽ cài
+skill mới ở lần chạy `./sync.sh --agent all` kế tiếp.
+
 ## Tham số `install.sh`
 
 | Tham số | Ý nghĩa |

@@ -32,11 +32,50 @@ case "$ags_agent" in codex|claude|cursor|all) ;; *) die '--agent is required' ;;
 case "$ags_mode" in symlink|copy) ;; *) die '--mode must be symlink or copy' ;; esac
 
 ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ags_skill_source="$ags_root/skills/commit"
+ags_manifest="$ags_root/manifest.yaml"
 ags_global_rule="$ags_root/shared-rules/global.md"
 ags_rule_source="$ags_root/shared-rules/commit.md"
 ags_cursor_global_rule="$ags_root/adapters/cursor/global.mdc"
 ags_cursor_rule="$ags_root/adapters/cursor/commit.mdc"
+ags_skill_list=$(mktemp "${TMPDIR:-/tmp}/agent-skills.XXXXXX")
+trap 'rm -f -- "$ags_skill_list"' EXIT HUP INT TERM
+
+manifest_skills() {
+  awk '
+    /^skills:[[:space:]]*$/ { in_skills = 1; next }
+    in_skills && /^[^[:space:]]/ { exit }
+    in_skills && /^  [^[:space:]][^:]*:[[:space:]]*$/ {
+      if (name != "") print name "|" source
+      name = $0
+      sub(/^  /, "", name)
+      sub(/:[[:space:]]*$/, "", name)
+      source = ""
+      next
+    }
+    in_skills && /^    source:[[:space:]]*/ {
+      source = $0
+      sub(/^    source:[[:space:]]*/, "", source)
+      sub(/[[:space:]]*$/, "", source)
+    }
+    END { if (in_skills && name != "") print name "|" source }
+  ' "$ags_manifest"
+}
+
+validate_skills() {
+  [ -f "$ags_manifest" ] || die "missing manifest: $ags_manifest"
+  manifest_skills > "$ags_skill_list"
+  [ -s "$ags_skill_list" ] || die 'manifest has no skills'
+  ags_seen_skills=''
+  while IFS='|' read -r ags_skill_name ags_skill_path; do
+    case "$ags_skill_name" in ''|*[!a-z0-9-]*) die "invalid skill name: $ags_skill_name" ;; esac
+    case " $ags_seen_skills " in *" $ags_skill_name "*) die "duplicate skill name: $ags_skill_name" ;; esac
+    ags_seen_skills="$ags_seen_skills $ags_skill_name"
+    case "$ags_skill_path" in skills/*) ;; *) die "invalid skill source for $ags_skill_name: ${ags_skill_path:-missing}" ;; esac
+    case "/$ags_skill_path/" in */../*) die "invalid skill source for $ags_skill_name: $ags_skill_path" ;; esac
+    [ "$(basename -- "$ags_skill_path")" = "$ags_skill_name" ] || die "skill source name mismatch: $ags_skill_name"
+    [ -f "$ags_root/$ags_skill_path/SKILL.md" ] || die "missing SKILL.md for $ags_skill_name: $ags_skill_path"
+  done < "$ags_skill_list"
+}
 
 backup_target() {
   ags_target=$1
@@ -114,26 +153,35 @@ install_managed_rule() {
   rm -f -- "$ags_tmp"
 }
 
+install_skills() {
+  ags_home=$1
+  while IFS='|' read -r ags_skill_name ags_skill_path; do
+    install_target "$ags_root/$ags_skill_path" "$ags_home/skills/$ags_skill_name"
+  done < "$ags_skill_list"
+}
+
 install_codex() {
   ags_home=${CODEX_HOME:-"$HOME/.codex"}
-  install_target "$ags_skill_source" "$ags_home/skills/commit"
+  install_skills "$ags_home"
   [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/AGENTS.md" "$ags_global_rule" '<!-- agent-skills:global -->'
   [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/AGENTS.md" "$ags_rule_source" '<!-- agent-skills:commit -->'
 }
 
 install_claude() {
   ags_home=${CLAUDE_CONFIG_DIR:-"$HOME/.claude"}
-  install_target "$ags_skill_source" "$ags_home/skills/commit"
+  install_skills "$ags_home"
   [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/CLAUDE.md" "$ags_global_rule" '<!-- agent-skills:global -->'
   [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/CLAUDE.md" "$ags_rule_source" '<!-- agent-skills:commit -->'
 }
 
 install_cursor() {
   ags_home=${CURSOR_CONFIG_DIR:-"$HOME/.cursor"}
-  install_target "$ags_skill_source" "$ags_home/skills/commit"
+  install_skills "$ags_home"
   [ "$ags_rules" -eq 0 ] || install_target "$ags_cursor_global_rule" "$ags_home/rules/global.mdc"
   [ "$ags_rules" -eq 0 ] || install_target "$ags_cursor_rule" "$ags_home/rules/commit.mdc"
 }
+
+validate_skills
 
 case "$ags_agent" in
   codex) install_codex ;;
