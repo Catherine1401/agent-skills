@@ -1,5 +1,9 @@
 # Agent Skills
 
+<p align="center">
+  <img src="assets/social-preview.png" alt="Agent Skills" width="640">
+</p>
+
 [![Test](https://github.com/Catherine1401/agent-skills/actions/workflows/test.yml/badge.svg)](https://github.com/Catherine1401/agent-skills/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
