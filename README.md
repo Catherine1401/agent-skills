@@ -17,6 +17,33 @@ Cài cho tất cả agent được hỗ trợ:
 ./install.sh --agent all --mode symlink
 ```
 
+## Đồng bộ giữa các máy
+
+Dùng `symlink` để skill trong thư mục clone luôn phản ánh bản repo hiện tại.
+Mỗi máy cần cấu hình Git identity và đăng nhập GitHub với quyền ghi trước khi
+agent có thể push:
+
+```sh
+git config --global user.name "Tên của bạn"
+git config --global user.email "you@example.com"
+gh auth login
+```
+
+Sau khi một máy đã commit, push thay đổi và bạn muốn nhận bản mới ở máy khác:
+
+```sh
+cd agent-skills
+./sync.sh --agent all
+```
+
+`sync.sh` chỉ fast-forward từ `origin/main`, sau đó cập nhật các rule có marker
+do installer quản lý. Nó dừng nếu repo có thay đổi local hoặc lịch sử bị phân
+nhánh; commit/push hoặc giải quyết khác biệt trước khi chạy lại. Skill `commit`
+vẫn yêu cầu duyệt trước mỗi commit và chỉ push khi bạn yêu cầu.
+
+Các rule được cài cho mọi agent: trả lời bằng tiếng Việt; cập nhật skill với
+text tối thiểu, ưu tiên quyết định thực thi của agent; và commit có phạm vi hẹp.
+
 ## Tham số `install.sh`
 
 | Tham số | Ý nghĩa |
@@ -31,6 +58,9 @@ Cài cho tất cả agent được hỗ trợ:
 | `--force` | Nếu đích đã tồn tại, chuyển bản cũ thành file/thư mục backup có timestamp rồi cài bản mới. |
 | `--dry-run` | In các thay đổi dự kiến, không ghi file. Dùng để kiểm tra trước. |
 | `--help` hoặc `-h` | Hiện cú pháp lệnh. |
+
+`sync.sh` nhận `--agent codex|claude|cursor|all` (mặc định `all`), `--dry-run`
+và `--help`.
 
 Ví dụ an toàn trước khi cài:
 

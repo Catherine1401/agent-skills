@@ -33,7 +33,9 @@ case "$ags_mode" in symlink|copy) ;; *) die '--mode must be symlink or copy' ;; 
 
 ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ags_skill_source="$ags_root/skills/commit"
+ags_global_rule="$ags_root/shared-rules/global.md"
 ags_rule_source="$ags_root/shared-rules/commit.md"
+ags_cursor_global_rule="$ags_root/adapters/cursor/global.mdc"
 ags_cursor_rule="$ags_root/adapters/cursor/commit.mdc"
 
 backup_target() {
@@ -66,39 +68,70 @@ install_target() {
   fi
 }
 
-append_rule() {
+install_managed_rule() {
   ags_target=$1
   ags_source=$2
-  ags_marker='<!-- agent-skills:commit -->'
-  if [ -f "$ags_target" ] && grep -Fqx "$ags_marker" "$ags_target"; then
-    printf '%s\n' "rule present: $ags_target"
-    return
+  ags_marker=$3
+  if [ -f "$ags_target" ]; then
+    ags_marker_count=$(grep -Fxc "$ags_marker" "$ags_target" || true)
+  else
+    ags_marker_count=0
   fi
-  printf '%s\n' "add rule: $ags_target"
+  case "$ags_marker_count" in
+    0) ags_rule_action='add rule' ;;
+    2) ags_rule_action='update rule' ;;
+    *) die "invalid managed rule marker in: $ags_target" ;;
+  esac
+  printf '%s\n' "$ags_rule_action: $ags_target"
   [ "$ags_dry_run" -eq 1 ] && return
   mkdir -p -- "$(dirname -- "$ags_target")"
-  {
-    printf '\n%s\n' "$ags_marker"
-    cat "$ags_source"
-    printf '%s\n' "$ags_marker"
-  } >> "$ags_target"
+  if [ "$ags_marker_count" -eq 0 ]; then
+    {
+      printf '\n%s\n' "$ags_marker"
+      cat "$ags_source"
+      printf '%s\n' "$ags_marker"
+    } >> "$ags_target"
+    return
+  fi
+  ags_tmp=$(mktemp "$(dirname -- "$ags_target")/.agent-skills.XXXXXX")
+  awk -v marker="$ags_marker" -v source="$ags_source" '
+    $0 == marker {
+      marker_count++
+      if (marker_count == 1) {
+        print marker
+        while ((getline line < source) > 0) print line
+        close(source)
+        in_block = 1
+        next
+      }
+      print marker
+      in_block = 0
+      next
+    }
+    !in_block { print }
+  ' "$ags_target" > "$ags_tmp"
+  cat "$ags_tmp" > "$ags_target"
+  rm -f -- "$ags_tmp"
 }
 
 install_codex() {
   ags_home=${CODEX_HOME:-"$HOME/.codex"}
   install_target "$ags_skill_source" "$ags_home/skills/commit"
-  [ "$ags_rules" -eq 0 ] || append_rule "$ags_home/AGENTS.md" "$ags_rule_source"
+  [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/AGENTS.md" "$ags_global_rule" '<!-- agent-skills:global -->'
+  [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/AGENTS.md" "$ags_rule_source" '<!-- agent-skills:commit -->'
 }
 
 install_claude() {
   ags_home=${CLAUDE_CONFIG_DIR:-"$HOME/.claude"}
   install_target "$ags_skill_source" "$ags_home/skills/commit"
-  [ "$ags_rules" -eq 0 ] || append_rule "$ags_home/CLAUDE.md" "$ags_rule_source"
+  [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/CLAUDE.md" "$ags_global_rule" '<!-- agent-skills:global -->'
+  [ "$ags_rules" -eq 0 ] || install_managed_rule "$ags_home/CLAUDE.md" "$ags_rule_source" '<!-- agent-skills:commit -->'
 }
 
 install_cursor() {
   ags_home=${CURSOR_CONFIG_DIR:-"$HOME/.cursor"}
   install_target "$ags_skill_source" "$ags_home/skills/commit"
+  [ "$ags_rules" -eq 0 ] || install_target "$ags_cursor_global_rule" "$ags_home/rules/global.mdc"
   [ "$ags_rules" -eq 0 ] || install_target "$ags_cursor_rule" "$ags_home/rules/commit.mdc"
 }
 

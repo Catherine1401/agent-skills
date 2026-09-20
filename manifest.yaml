@@ -1,8 +1,10 @@
+policies:
+  global:
+    source: shared-rules/global.md
+    cursor: adapters/cursor/global.mdc
+  commit:
+    source: shared-rules/commit.md
+    cursor: adapters/cursor/commit.mdc
 skills:
   commit:
     source: skills/commit
-    rules: shared-rules/commit.md
-    adapters:
-      codex: AGENTS.md
-      claude-code: CLAUDE.md
-      cursor: adapters/cursor/commit.mdc
