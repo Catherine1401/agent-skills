@@ -73,11 +73,9 @@ if HOME="$ags_tmp/name-home" CODEX_HOME="$ags_tmp/name-home/.codex" "$ags_tmp/na
 fi
 
 git init --bare -q "$ags_tmp/remote.git"
-cp -R "$ags_root" "$ags_tmp/sync-repo"
+git clone -q "$ags_root" "$ags_tmp/sync-repo"
 git -C "$ags_tmp/sync-repo" config user.name 'Installer Test'
 git -C "$ags_tmp/sync-repo" config user.email 'installer@example.test'
-git -C "$ags_tmp/sync-repo" add -A
-git -C "$ags_tmp/sync-repo" commit -qm 'test: prepare sync repository'
 git -C "$ags_tmp/sync-repo" remote set-url origin "$ags_tmp/remote.git"
 git -C "$ags_tmp/sync-repo" push -q -u origin main
 git -C "$ags_tmp/remote.git" symbolic-ref HEAD refs/heads/main
