@@ -64,6 +64,18 @@ Use `--dry-run` to inspect changes before installation. `--force` backs up an
 existing target before replacing it. Override configuration locations with
 `CODEX_HOME`, `CLAUDE_CONFIG_DIR`, or `CURSOR_CONFIG_DIR`.
 
+## Uninstall
+
+```text
+./uninstall.sh --agent codex|claude|cursor|all [--yes] [--force] [--dry-run]
+```
+
+Removes installed skills, Cursor rules, and managed policy blocks, then restores
+any `*.agent-skills-backup.*` that `--force` created. A modified copy is skipped.
+`--agent all` also deletes this checkout: it asks for confirmation (`--yes` skips
+it) and refuses uncommitted or unpushed work unless `--force`. Use `--dry-run`
+first; it changes nothing.
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md). Keep pull

@@ -119,4 +119,92 @@ if HOME="$ags_tmp/sync-home" "$ags_tmp/sync-repo/sync.sh" >/dev/null 2>&1; then
   exit 1
 fi
 
+ags_un_home="$ags_tmp/un-home"
+un_env() {
+  HOME="$ags_un_home" CODEX_HOME="$ags_un_home/.codex" CLAUDE_CONFIG_DIR="$ags_un_home/.claude" CURSOR_CONFIG_DIR="$ags_un_home/.cursor" "$@"
+}
+un_repo() {
+  rm -rf "$ags_un_home" "$ags_tmp/un-repo"
+  cp -R "$ags_root" "$ags_tmp/un-repo"
+  rm -rf "$ags_tmp/un-repo/.git"
+}
+
+un_repo
+mkdir -p "$ags_un_home/.claude"
+printf '%s\n' '# Local instructions' > "$ags_un_home/.claude/CLAUDE.md"
+cp "$ags_un_home/.claude/CLAUDE.md" "$ags_tmp/un-claude-original.md"
+un_env "$ags_tmp/un-repo/install.sh" --agent all
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --dry-run
+[ -L "$ags_un_home/.claude/skills/commit" ]
+[ -d "$ags_tmp/un-repo" ]
+grep -Fq 'agent-skills:' "$ags_un_home/.claude/CLAUDE.md"
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --yes
+[ ! -e "$ags_tmp/un-repo" ]
+for ags_agent_home in "$ags_un_home/.codex" "$ags_un_home/.claude" "$ags_un_home/.cursor"; do
+  [ ! -e "$ags_agent_home/skills/commit" ] && [ ! -L "$ags_agent_home/skills/commit" ]
+done
+[ ! -e "$ags_un_home/.cursor/rules/global.mdc" ] && [ ! -L "$ags_un_home/.cursor/rules/global.mdc" ]
+[ ! -e "$ags_un_home/.cursor/rules/commit.mdc" ] && [ ! -L "$ags_un_home/.cursor/rules/commit.mdc" ]
+[ ! -s "$ags_un_home/.codex/AGENTS.md" ]
+cmp "$ags_un_home/.claude/CLAUDE.md" "$ags_tmp/un-claude-original.md"
+
+un_repo
+un_env "$ags_tmp/un-repo/install.sh" --agent claude --mode copy --no-rules
+printf '%s\n' 'edited' >> "$ags_un_home/.claude/skills/commit/SKILL.md"
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent claude
+grep -Fqx 'edited' "$ags_un_home/.claude/skills/commit/SKILL.md"
+un_env "$ags_tmp/un-repo/install.sh" --agent codex --mode copy --no-rules
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent codex
+[ ! -e "$ags_un_home/.codex/skills/commit" ]
+[ -d "$ags_tmp/un-repo" ]
+
+un_repo
+mkdir -p "$ags_un_home/.claude/skills/commit"
+printf '%s\n' 'mine' > "$ags_un_home/.claude/skills/commit/own.txt"
+un_env "$ags_tmp/un-repo/install.sh" --agent claude --mode copy --no-rules --force
+sleep 1
+un_env "$ags_tmp/un-repo/install.sh" --agent claude --no-rules --force
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent claude
+[ "$(cat "$ags_un_home/.claude/skills/commit/own.txt")" = mine ]
+[ ! -e "$ags_un_home/.claude/skills/commit/SKILL.md" ]
+[ "$(ls "$ags_un_home/.claude/skills" | wc -l)" = 1 ]
+
+un_repo
+un_env "$ags_tmp/un-repo/install.sh" --agent all
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent claude --yes
+[ -d "$ags_tmp/un-repo" ]
+[ -L "$ags_un_home/.codex/skills/commit" ]
+[ ! -L "$ags_un_home/.claude/skills/commit" ]
+if un_env "$ags_tmp/un-repo/uninstall.sh" --agent all </dev/null >/dev/null 2>&1; then
+  printf '%s\n' 'uninstall deleted the checkout without confirmation' >&2
+  exit 1
+fi
+[ -d "$ags_tmp/un-repo" ]
+[ -L "$ags_un_home/.codex/skills/commit" ]
+
+un_repo
+git -C "$ags_tmp/un-repo" init -q
+git -C "$ags_tmp/un-repo" checkout -qb main
+git -C "$ags_tmp/un-repo" config user.name 'Installer Test'
+git -C "$ags_tmp/un-repo" config user.email 'installer@example.test'
+git -C "$ags_tmp/un-repo" add -A
+git -C "$ags_tmp/un-repo" commit -qm 'test: prepare uninstall repository'
+un_env "$ags_tmp/un-repo/install.sh" --agent all
+if un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --yes >/dev/null 2>&1; then
+  printf '%s\n' 'uninstall deleted a checkout with unpushed commits' >&2
+  exit 1
+fi
+git init --bare -q "$ags_tmp/un-remote.git"
+git -C "$ags_tmp/un-repo" remote add origin "$ags_tmp/un-remote.git"
+git -C "$ags_tmp/un-repo" push -q origin main
+printf '%s\n' 'dirty' >> "$ags_tmp/un-repo/README.md"
+if un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --yes >/dev/null 2>&1; then
+  printf '%s\n' 'uninstall deleted a checkout with uncommitted changes' >&2
+  exit 1
+fi
+[ -d "$ags_tmp/un-repo" ]
+git -C "$ags_tmp/un-repo" checkout -- README.md
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --yes
+[ ! -e "$ags_tmp/un-repo" ]
+
 printf '%s\n' 'install tests passed'
