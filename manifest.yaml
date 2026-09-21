@@ -13,3 +13,5 @@ skills:
     source: skills/commit
   user-policy:
     source: skills/user-policy
+  skill-creator:
+    source: skills/skill-creator
