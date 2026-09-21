@@ -11,3 +11,5 @@ policies:
 skills:
   commit:
     source: skills/commit
+  user-policy:
+    source: skills/user-policy

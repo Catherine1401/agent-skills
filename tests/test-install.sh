@@ -13,6 +13,10 @@ HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/.claude
 [ "$(readlink "$ags_tmp/.codex/skills/commit")" = "$ags_root/skills/commit" ]
 [ -L "$ags_tmp/.claude/skills/commit" ]
 [ -L "$ags_tmp/.cursor/skills/commit" ]
+[ -L "$ags_tmp/.codex/skills/user-policy" ]
+[ "$(readlink "$ags_tmp/.codex/skills/user-policy")" = "$ags_root/skills/user-policy" ]
+[ -L "$ags_tmp/.claude/skills/user-policy" ]
+[ -L "$ags_tmp/.cursor/skills/user-policy" ]
 [ -L "$ags_tmp/.cursor/rules/global.mdc" ]
 [ -L "$ags_tmp/.cursor/rules/commit.mdc" ]
 grep -Fqx '# Local instructions' "$ags_tmp/.codex/AGENTS.md"
