@@ -1,13 +1,11 @@
 #!/bin/sh
 set -eu
 
+ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+. "$ags_root/lib.sh"
+
 usage() {
   printf '%s\n' 'Usage: ./sync.sh [--agent codex|claude|cursor|all] [--dry-run]'
-}
-
-die() {
-  printf '%s\n' "error: $*" >&2
-  exit 1
 }
 
 ags_agent='all'
@@ -22,9 +20,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-case "$ags_agent" in codex|claude|cursor|all) ;; *) die '--agent must be codex, claude, cursor, or all' ;; esac
+valid_agent "$ags_agent" || die '--agent must be codex, claude, cursor, or all'
 
-ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 ags_branch=$(git -C "$ags_root" branch --show-current)
 [ "$ags_branch" = 'main' ] || die "sync requires main; current branch: ${ags_branch:-detached}"
 [ -z "$(git -C "$ags_root" status --porcelain)" ] || die 'commit, push, or discard local changes before sync'
