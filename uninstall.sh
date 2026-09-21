@@ -121,6 +121,7 @@ check_delete_root() {
 }
 
 validate_skills
+validate_policies
 [ "$ags_agent" != all ] || check_delete_root
 
 for ags_agent_name in $(agents_of "$ags_agent"); do

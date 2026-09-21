@@ -128,6 +128,7 @@ prune_agent() {
 }
 
 validate_skills
+validate_policies
 
 for ags_agent_name in $(agents_of "$ags_agent"); do
   install_agent "$ags_agent_name"

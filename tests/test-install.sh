@@ -231,4 +231,19 @@ git -C "$ags_tmp/un-repo" checkout -- README.md
 un_env "$ags_tmp/un-repo/uninstall.sh" --agent all --yes
 [ ! -e "$ags_tmp/un-repo" ]
 
+cp -R "$ags_root" "$ags_tmp/policy-repo"
+printf '%s\n' '## Extra policy' > "$ags_tmp/policy-repo/shared-rules/extra.md"
+awk '{ print } /^policies:/ { print "  extra:"; print "    source: shared-rules/extra.md" }' "$ags_tmp/policy-repo/manifest.yaml" > "$ags_tmp/policy-manifest.yaml"
+mv "$ags_tmp/policy-manifest.yaml" "$ags_tmp/policy-repo/manifest.yaml"
+HOME="$ags_tmp/policy-home" CODEX_HOME="$ags_tmp/policy-home/.codex" "$ags_tmp/policy-repo/install.sh" --agent codex
+[ "$(grep -Fxc '<!-- agent-skills:extra -->' "$ags_tmp/policy-home/.codex/AGENTS.md")" = 2 ]
+[ "$(grep -Fxc '<!-- agent-skills:global -->' "$ags_tmp/policy-home/.codex/AGENTS.md")" = 2 ]
+grep -Fqx '## Extra policy' "$ags_tmp/policy-home/.codex/AGENTS.md"
+rm "$ags_tmp/policy-repo/shared-rules/extra.md"
+if HOME="$ags_tmp/policy-bad-home" CODEX_HOME="$ags_tmp/policy-bad-home/.codex" "$ags_tmp/policy-repo/install.sh" --agent codex >/dev/null 2>&1; then
+  printf '%s\n' 'installer accepted a policy without source file' >&2
+  exit 1
+fi
+[ ! -e "$ags_tmp/policy-bad-home/.codex/skills/commit" ]
+
 printf '%s\n' 'install tests passed'

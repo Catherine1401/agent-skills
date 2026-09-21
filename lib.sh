@@ -1,12 +1,6 @@
 # Shared by install.sh, uninstall.sh and sync.sh. Requires ags_root to be set before sourcing.
 
 ags_manifest="$ags_root/manifest.yaml"
-ags_global_rule="$ags_root/shared-rules/global.md"
-ags_rule_source="$ags_root/shared-rules/commit.md"
-ags_cursor_global_rule="$ags_root/adapters/cursor/global.mdc"
-ags_cursor_rule="$ags_root/adapters/cursor/commit.mdc"
-ags_global_marker='<!-- agent-skills:global -->'
-ags_commit_marker='<!-- agent-skills:commit -->'
 
 die() {
   printf '%s\n' "error: $*" >&2
@@ -33,25 +27,43 @@ agent_home() {
   esac
 }
 
-manifest_skills() {
-  awk '
-    /^skills:[[:space:]]*$/ { in_skills = 1; next }
-    in_skills && /^[^[:space:]]/ { exit }
-    in_skills && /^  [^[:space:]][^:]*:[[:space:]]*$/ {
-      if (name != "") print name "|" source
+# Prints "name|value..." per entry of a top-level manifest section; the remaining arguments are the keys to read.
+manifest_entries() {
+  ags_section=$1
+  shift
+  awk -v section="$ags_section" -v keys="$*" '
+    BEGIN { key_count = split(keys, key_names, " ") }
+    function flush(   line, i) {
+      if (name == "") return
+      line = name
+      for (i = 1; i <= key_count; i++) line = line "|" values[key_names[i]]
+      print line
+    }
+    $0 ~ ("^" section ":[[:space:]]*$") { in_section = 1; next }
+    in_section && /^[^[:space:]]/ { exit }
+    in_section && /^  [^[:space:]][^:]*:[[:space:]]*$/ {
+      flush()
       name = $0
       sub(/^  /, "", name)
       sub(/:[[:space:]]*$/, "", name)
-      source = ""
+      delete values
       next
     }
-    in_skills && /^    source:[[:space:]]*/ {
-      source = $0
-      sub(/^    source:[[:space:]]*/, "", source)
-      sub(/[[:space:]]*$/, "", source)
+    in_section && /^    [a-z_]+:[[:space:]]*/ {
+      key = $0
+      sub(/^    /, "", key)
+      sub(/:.*$/, "", key)
+      value = $0
+      sub(/^    [a-z_]+:[[:space:]]*/, "", value)
+      sub(/[[:space:]]*$/, "", value)
+      values[key] = value
     }
-    END { if (in_skills && name != "") print name "|" source }
+    END { if (in_section) flush() }
   ' "$ags_manifest"
+}
+
+manifest_skills() {
+  manifest_entries skills source
 }
 
 validate_skills() {
@@ -72,6 +84,28 @@ validate_skills() {
   done < "$ags_skill_list"
 }
 
+policy_marker() {
+  printf '<!-- agent-skills:%s -->\n' "$1"
+}
+
+# Loads ags_policies as lines "name|source|cursor".
+validate_policies() {
+  ags_policies=$(manifest_entries policies source cursor)
+  [ -n "$ags_policies" ] || return 0
+  ags_seen_policies=''
+  while IFS='|' read -r ags_policy_name ags_policy_source ags_policy_cursor; do
+    case "$ags_policy_name" in ''|*[!a-z0-9-]*) die "invalid policy name: $ags_policy_name" ;; esac
+    case " $ags_seen_policies " in *" $ags_policy_name "*) die "duplicate policy name: $ags_policy_name" ;; esac
+    ags_seen_policies="$ags_seen_policies $ags_policy_name"
+    case "$ags_policy_source" in shared-rules/*) ;; *) die "invalid policy source for $ags_policy_name: ${ags_policy_source:-missing}" ;; esac
+    case "/$ags_policy_source/" in */../*) die "invalid policy source for $ags_policy_name: $ags_policy_source" ;; esac
+    [ -f "$ags_root/$ags_policy_source" ] || die "missing policy source for $ags_policy_name: $ags_policy_source"
+    [ -z "$ags_policy_cursor" ] || [ -f "$ags_root/$ags_policy_cursor" ] || die "missing cursor rule for $ags_policy_name: $ags_policy_cursor"
+  done <<EOF
+$ags_policies
+EOF
+}
+
 # Lines "source|target". Skill targets need validate_skills first.
 agent_skill_targets() {
   ags_targets_home=$(agent_home "$1")
@@ -83,8 +117,10 @@ agent_skill_targets() {
 agent_rule_targets() {
   [ "$1" = cursor ] || return 0
   ags_targets_home=$(agent_home cursor)
-  printf '%s|%s\n' "$ags_cursor_global_rule" "$ags_targets_home/rules/global.mdc"
-  printf '%s|%s\n' "$ags_cursor_rule" "$ags_targets_home/rules/commit.mdc"
+  printf '%s\n' "$ags_policies" | while IFS='|' read -r ags_policy_name _ ags_policy_cursor; do
+    [ -n "$ags_policy_cursor" ] || continue
+    printf '%s|%s\n' "$ags_root/$ags_policy_cursor" "$ags_targets_home/rules/$ags_policy_name.mdc"
+  done
 }
 
 # Lines "file|source|marker".
@@ -94,8 +130,10 @@ agent_managed_rules() {
     claude) ags_rules_file="$(agent_home claude)/CLAUDE.md" ;;
     *) return 0 ;;
   esac
-  printf '%s|%s|%s\n' "$ags_rules_file" "$ags_global_rule" "$ags_global_marker"
-  printf '%s|%s|%s\n' "$ags_rules_file" "$ags_rule_source" "$ags_commit_marker"
+  printf '%s\n' "$ags_policies" | while IFS='|' read -r ags_policy_name ags_policy_source _; do
+    [ -n "$ags_policy_name" ] || continue
+    printf '%s|%s|%s\n' "$ags_rules_file" "$ags_root/$ags_policy_source" "$(policy_marker "$ags_policy_name")"
+  done
 }
 
 # Prints 0 (absent) or 2 (present); dies on any other marker count.
