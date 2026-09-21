@@ -28,8 +28,8 @@ ags_branch=$(git -C "$ags_root" branch --show-current)
 
 if [ "$ags_dry_run" -eq 1 ]; then
   printf '%s\n' 'sync: git pull --ff-only origin main'
-  exec "$ags_root/install.sh" --agent "$ags_agent" --mode symlink --dry-run
+  exec "$ags_root/install.sh" --agent "$ags_agent" --mode symlink --prune --dry-run
 fi
 
 git -C "$ags_root" pull --ff-only origin main
-exec "$ags_root/install.sh" --agent "$ags_agent" --mode symlink
+exec "$ags_root/install.sh" --agent "$ags_agent" --mode symlink --prune

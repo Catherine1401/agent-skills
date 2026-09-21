@@ -101,6 +101,30 @@ HOME="$ags_tmp/sync-home" CODEX_HOME="$ags_tmp/sync-home/.codex" CLAUDE_CONFIG_D
 [ -L "$ags_tmp/sync-home/.codex/skills/test-skill" ]
 [ -L "$ags_tmp/sync-home/.claude/skills/test-skill" ]
 [ -L "$ags_tmp/sync-home/.cursor/skills/test-skill" ]
+
+sync_env() {
+  HOME="$ags_tmp/sync-home" CODEX_HOME="$ags_tmp/sync-home/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/sync-home/.claude" CURSOR_CONFIG_DIR="$ags_tmp/sync-home/.cursor" "$@"
+}
+ln -s "$ags_tmp" "$ags_tmp/sync-home/.claude/skills/foreign"
+git -C "$ags_tmp/upstream" rm -rq skills/test-skill
+sed -i '/test-skill/d' "$ags_tmp/upstream/manifest.yaml"
+git -C "$ags_tmp/upstream" add manifest.yaml
+git -C "$ags_tmp/upstream" commit -qm 'test: remove remote skill'
+git -C "$ags_tmp/upstream" push -q origin main
+git -C "$ags_tmp/sync-repo" pull -q --ff-only origin main
+sync_env "$ags_tmp/sync-repo/install.sh" --agent all
+sync_env "$ags_tmp/sync-repo/install.sh" --agent all --prune --dry-run
+for ags_agent_home in "$ags_tmp/sync-home/.codex" "$ags_tmp/sync-home/.claude" "$ags_tmp/sync-home/.cursor"; do
+  [ -L "$ags_agent_home/skills/test-skill" ]
+done
+sync_env "$ags_tmp/sync-repo/sync.sh" --agent all
+for ags_agent_home in "$ags_tmp/sync-home/.codex" "$ags_tmp/sync-home/.claude" "$ags_tmp/sync-home/.cursor"; do
+  [ ! -L "$ags_agent_home/skills/test-skill" ]
+  [ -L "$ags_agent_home/skills/commit" ]
+done
+[ -L "$ags_tmp/sync-home/.claude/skills/foreign" ]
+[ -L "$ags_tmp/sync-home/.cursor/rules/global.mdc" ]
+[ -L "$ags_tmp/sync-home/.cursor/rules/commit.mdc" ]
 printf '%s\n' 'dirty' >> "$ags_tmp/sync-repo/README.md"
 if HOME="$ags_tmp/sync-home" "$ags_tmp/sync-repo/sync.sh" >/dev/null 2>&1; then
   printf '%s\n' 'sync accepted a dirty repository' >&2

@@ -5,13 +5,14 @@ ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$ags_root/lib.sh"
 
 usage() {
-  printf '%s\n' 'Usage: ./install.sh --agent codex|claude|cursor|all [--mode symlink|copy] [--no-rules] [--force] [--dry-run]'
+  printf '%s\n' 'Usage: ./install.sh --agent codex|claude|cursor|all [--mode symlink|copy] [--no-rules] [--force] [--prune] [--dry-run]'
 }
 
 ags_agent=''
 ags_mode='symlink'
 ags_rules=1
 ags_force=0
+ags_prune=0
 ags_dry_run=0
 
 while [ "$#" -gt 0 ]; do
@@ -20,6 +21,7 @@ while [ "$#" -gt 0 ]; do
     --mode) ags_mode=${2:?missing mode}; shift 2 ;;
     --no-rules) ags_rules=0; shift ;;
     --force) ags_force=1; shift ;;
+    --prune) ags_prune=1; shift ;;
     --dry-run) ags_dry_run=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) die "unknown option: $1" ;;
@@ -114,8 +116,22 @@ install_agent() {
   fi
 }
 
+# Removes symlinks into this checkout whose skill or rule is no longer installed.
+prune_agent() {
+  ags_known=$({ agent_skill_targets "$1"; agent_rule_targets "$1"; } | cut -d'|' -f2)
+  agent_links "$1" | while IFS= read -r ags_link; do
+    if ! printf '%s\n' "$ags_known" | grep -Fxq -- "$ags_link"; then
+      printf '%s\n' "prune: $ags_link"
+      [ "$ags_dry_run" -eq 1 ] || rm -f -- "$ags_link"
+    fi
+  done
+}
+
 validate_skills
 
 for ags_agent_name in $(agents_of "$ags_agent"); do
   install_agent "$ags_agent_name"
+  if [ "$ags_prune" -eq 1 ]; then
+    prune_agent "$ags_agent_name"
+  fi
 done

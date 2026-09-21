@@ -36,7 +36,8 @@ cd agent-skills
 ```
 
 `sync.sh` fast-forwards from `origin/main` and refreshes symlinked installs. It
-stops when local changes or divergent history would make an update unsafe.
+also removes symlinks of skills that left `manifest.yaml`. It stops when local
+changes or divergent history would make an update unsafe.
 
 ## Add a skill
 
@@ -57,11 +58,12 @@ canonical cross-agent policy.
 
 ```text
 ./install.sh --agent codex|claude|cursor|all \
-  [--mode symlink|copy] [--no-rules] [--force] [--dry-run]
+  [--mode symlink|copy] [--no-rules] [--force] [--prune] [--dry-run]
 ```
 
 Use `--dry-run` to inspect changes before installation. `--force` backs up an
-existing target before replacing it. Override configuration locations with
+existing target before replacing it. `--prune` removes symlinks into this
+checkout whose skill is no longer in `manifest.yaml`. Override configuration locations with
 `CODEX_HOME`, `CLAUDE_CONFIG_DIR`, or `CURSOR_CONFIG_DIR`.
 
 ## Uninstall

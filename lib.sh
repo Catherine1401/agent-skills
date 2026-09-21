@@ -118,3 +118,14 @@ is_managed() {
   fi
   [ -e "$2" ] && diff -rq -- "$1" "$2" >/dev/null 2>&1
 }
+
+# Symlinks under the agent's skills/ and rules/ that point into this checkout.
+agent_links() {
+  ags_links_home=$(agent_home "$1")
+  for ags_entry in "$ags_links_home"/skills/* "$ags_links_home"/rules/*; do
+    [ -L "$ags_entry" ] || continue
+    if is_managed '' "$ags_entry"; then
+      printf '%s\n' "$ags_entry"
+    fi
+  done
+}

@@ -33,12 +33,8 @@ delete_path() {
 
 # Symlinks are removed here, including ones whose skill left the manifest.
 remove_links() {
-  ags_home=$(agent_home "$1")
-  for ags_entry in "$ags_home"/skills/* "$ags_home"/rules/*; do
-    [ -L "$ags_entry" ] || continue
-    if is_managed '' "$ags_entry"; then
-      delete_path "$ags_entry"
-    fi
+  agent_links "$1" | while IFS= read -r ags_entry; do
+    delete_path "$ags_entry"
   done
 }
 
