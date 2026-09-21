@@ -3,6 +3,7 @@
 - Purpose: distribute portable skills and policies for Codex, Claude Code, and Cursor on Linux.
 - `manifest.yaml` is the install manifest. It is the source of which skills and policies are installed.
 - `skills/<name>/SKILL.md` is the canonical implementation of a skill.
+- Current portable skills are `commit`, `user-policy`, and `skill-creator`; every manifest skill is installed for Codex, Claude Code, and Cursor.
 - `shared-rules/*.md` is the canonical shared policy; `adapters/` holds agent-specific representations. `shared-rules/user.md` holds the user-level rules for every agent.
 - `lib.sh` holds the logic shared by `install.sh`, `uninstall.sh`, and `sync.sh`; add shared logic there, never duplicate it across scripts.
 - `install.sh` validates the manifest and installs selected entries by symlink or copy; policies are written as managed marker blocks in `CLAUDE.md`/`AGENTS.md` and as Cursor rules. `--prune` removes symlinks of skills no longer in the manifest.
