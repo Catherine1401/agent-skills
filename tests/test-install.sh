@@ -18,6 +18,12 @@ HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/.claude
 grep -Fqx '# Local instructions' "$ags_tmp/.codex/AGENTS.md"
 [ "$(grep -Fxc '<!-- agent-skills:global -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
 [ "$(grep -Fxc '<!-- agent-skills:commit -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
+[ "$(grep -Fxc '<!-- agent-skills:user -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
+[ "$(grep -Fxc '<!-- agent-skills:user -->' "$ags_tmp/.claude/CLAUDE.md")" = 2 ]
+[ -f "$ags_tmp/.cursor/rules/user.mdc" ] && [ ! -L "$ags_tmp/.cursor/rules/user.mdc" ]
+grep -Fqx 'alwaysApply: true' "$ags_tmp/.cursor/rules/user.mdc"
+grep -Fqx '<!-- agent-skills:user -->' "$ags_tmp/.cursor/rules/user.mdc"
+grep -Fqx '## User policy' "$ags_tmp/.cursor/rules/user.mdc"
 grep -Fq 'Respond in Vietnamese.' "$ags_tmp/.codex/AGENTS.md"
 
 sed 's/Respond in Vietnamese\./Stale policy./' "$ags_tmp/.codex/AGENTS.md" > "$ags_tmp/AGENTS.md"
@@ -245,5 +251,37 @@ if HOME="$ags_tmp/policy-bad-home" CODEX_HOME="$ags_tmp/policy-bad-home/.codex" 
   exit 1
 fi
 [ ! -e "$ags_tmp/policy-bad-home/.codex/skills/commit" ]
+
+ags_user_rule="$ags_un_home/.cursor/rules/user.mdc"
+un_repo
+un_env "$ags_tmp/un-repo/install.sh" --agent cursor
+[ "$(un_env "$ags_tmp/un-repo/install.sh" --agent cursor | grep -c "^present: $ags_user_rule")" = 1 ]
+printf '%s\n' 'Changed rule.' >> "$ags_tmp/un-repo/shared-rules/user.md"
+[ "$(un_env "$ags_tmp/un-repo/install.sh" --agent cursor --dry-run | grep -c "^update: $ags_user_rule")" = 1 ]
+! grep -Fqx 'Changed rule.' "$ags_user_rule"
+un_env "$ags_tmp/un-repo/install.sh" --agent cursor
+grep -Fqx 'Changed rule.' "$ags_user_rule"
+
+un_repo
+mkdir -p "$ags_un_home/.cursor/rules"
+printf '%s\n' 'mine' > "$ags_user_rule"
+if un_env "$ags_tmp/un-repo/install.sh" --agent cursor >/dev/null 2>&1; then
+  printf '%s\n' 'installer overwrote a foreign generated rule target' >&2
+  exit 1
+fi
+[ "$(cat "$ags_user_rule")" = mine ]
+un_env "$ags_tmp/un-repo/install.sh" --agent cursor --force
+grep -Fqx '<!-- agent-skills:user -->' "$ags_user_rule"
+un_env "$ags_tmp/un-repo/uninstall.sh" --agent cursor
+[ "$(cat "$ags_user_rule")" = mine ]
+[ "$(ls "$ags_un_home/.cursor/rules" | wc -l)" = 1 ]
+
+un_repo
+mkdir -p "$ags_un_home/.cursor/rules"
+cp "$ags_tmp/un-repo/shared-rules/user.md" "$ags_tmp/user-md-original"
+ln -s "$ags_tmp/un-repo/shared-rules/user.md" "$ags_user_rule"
+un_env "$ags_tmp/un-repo/install.sh" --agent cursor --force
+[ ! -L "$ags_user_rule" ]
+cmp "$ags_tmp/un-repo/shared-rules/user.md" "$ags_tmp/user-md-original"
 
 printf '%s\n' 'install tests passed'

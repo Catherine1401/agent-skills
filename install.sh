@@ -61,6 +61,37 @@ install_target() {
   fi
 }
 
+generate_rule() {
+  cat "$1"
+  printf '%s\n' "$3"
+  cat "$2"
+}
+
+# Writes header + marker + source as a regular file; only files carrying the marker are overwritten without --force.
+install_generated_rule() {
+  ags_header=$1
+  ags_source=$2
+  ags_target=$3
+  ags_marker=$(policy_marker "$(basename -- "$ags_target" .mdc)")
+  if [ -f "$ags_target" ] && [ ! -L "$ags_target" ] && generate_rule "$ags_header" "$ags_source" "$ags_marker" | cmp -s - "$ags_target"; then
+    printf '%s\n' "present: $ags_target"
+    return
+  fi
+  ags_action=install
+  if [ -e "$ags_target" ] || [ -L "$ags_target" ]; then
+    if [ -f "$ags_target" ] && [ ! -L "$ags_target" ] && grep -Fxq -- "$ags_marker" "$ags_target"; then
+      ags_action=update
+    else
+      [ "$ags_force" -eq 1 ] || die "target exists: $ags_target (rerun with --force to back it up)"
+      backup_target "$ags_target"
+    fi
+  fi
+  printf '%s\n' "$ags_action: $ags_target"
+  [ "$ags_dry_run" -eq 1 ] && return
+  mkdir -p -- "$(dirname -- "$ags_target")"
+  generate_rule "$ags_header" "$ags_source" "$ags_marker" > "$ags_target"
+}
+
 install_managed_rule() {
   ags_target=$1
   ags_source=$2
@@ -107,8 +138,12 @@ install_agent() {
     install_target "$ags_source" "$ags_target"
   done
   if [ "$ags_rules" -eq 1 ]; then
-    agent_rule_targets "$1" | while IFS='|' read -r ags_source ags_target; do
-      install_target "$ags_source" "$ags_target"
+    agent_rule_targets "$1" | while IFS='|' read -r ags_source ags_target ags_header; do
+      if [ -n "$ags_header" ]; then
+        install_generated_rule "$ags_header" "$ags_source" "$ags_target"
+      else
+        install_target "$ags_source" "$ags_target"
+      fi
     done
     agent_managed_rules "$1" | while IFS='|' read -r ags_target ags_source ags_marker; do
       install_managed_rule "$ags_target" "$ags_source" "$ags_marker"

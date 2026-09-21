@@ -88,19 +88,21 @@ policy_marker() {
   printf '<!-- agent-skills:%s -->\n' "$1"
 }
 
-# Loads ags_policies as lines "name|source|cursor".
+# Loads ags_policies as lines "name|source|cursor|cursor_header".
 validate_policies() {
-  ags_policies=$(manifest_entries policies source cursor)
+  ags_policies=$(manifest_entries policies source cursor cursor_header)
   [ -n "$ags_policies" ] || return 0
   ags_seen_policies=''
-  while IFS='|' read -r ags_policy_name ags_policy_source ags_policy_cursor; do
+  while IFS='|' read -r ags_policy_name ags_policy_source ags_policy_cursor ags_policy_header; do
     case "$ags_policy_name" in ''|*[!a-z0-9-]*) die "invalid policy name: $ags_policy_name" ;; esac
     case " $ags_seen_policies " in *" $ags_policy_name "*) die "duplicate policy name: $ags_policy_name" ;; esac
     ags_seen_policies="$ags_seen_policies $ags_policy_name"
     case "$ags_policy_source" in shared-rules/*) ;; *) die "invalid policy source for $ags_policy_name: ${ags_policy_source:-missing}" ;; esac
     case "/$ags_policy_source/" in */../*) die "invalid policy source for $ags_policy_name: $ags_policy_source" ;; esac
     [ -f "$ags_root/$ags_policy_source" ] || die "missing policy source for $ags_policy_name: $ags_policy_source"
+    [ -z "$ags_policy_cursor" ] || [ -z "$ags_policy_header" ] || die "policy $ags_policy_name sets both cursor and cursor_header"
     [ -z "$ags_policy_cursor" ] || [ -f "$ags_root/$ags_policy_cursor" ] || die "missing cursor rule for $ags_policy_name: $ags_policy_cursor"
+    [ -z "$ags_policy_header" ] || [ -f "$ags_root/$ags_policy_header" ] || die "missing cursor header for $ags_policy_name: $ags_policy_header"
   done <<EOF
 $ags_policies
 EOF
@@ -114,12 +116,16 @@ agent_skill_targets() {
   done < "$ags_skill_list"
 }
 
+# Lines "source|target|header". A header means the target is generated from header + source.
 agent_rule_targets() {
   [ "$1" = cursor ] || return 0
   ags_targets_home=$(agent_home cursor)
-  printf '%s\n' "$ags_policies" | while IFS='|' read -r ags_policy_name _ ags_policy_cursor; do
-    [ -n "$ags_policy_cursor" ] || continue
-    printf '%s|%s\n' "$ags_root/$ags_policy_cursor" "$ags_targets_home/rules/$ags_policy_name.mdc"
+  printf '%s\n' "$ags_policies" | while IFS='|' read -r ags_policy_name ags_policy_source ags_policy_cursor ags_policy_header; do
+    if [ -n "$ags_policy_cursor" ]; then
+      printf '%s|%s|\n' "$ags_root/$ags_policy_cursor" "$ags_targets_home/rules/$ags_policy_name.mdc"
+    elif [ -n "$ags_policy_header" ]; then
+      printf '%s|%s|%s\n' "$ags_root/$ags_policy_source" "$ags_targets_home/rules/$ags_policy_name.mdc" "$ags_root/$ags_policy_header"
+    fi
   done
 }
 
@@ -148,13 +154,15 @@ managed_rule_count() {
   esac
 }
 
-# True when target is a symlink into this checkout or a copy identical to source.
+# True when target is a symlink into this checkout, a copy identical to source, or a generated file carrying a policy marker.
 is_managed() {
   if [ -L "$2" ]; then
     case "$(readlink "$2")" in "$ags_root"/*) return 0 ;; esac
     return 1
   fi
-  [ -e "$2" ] && diff -rq -- "$1" "$2" >/dev/null 2>&1
+  [ -e "$2" ] || return 1
+  diff -rq -- "$1" "$2" >/dev/null 2>&1 && return 0
+  [ -f "$2" ] && grep -Eq '^<!-- agent-skills:[a-z0-9-]+ -->$' "$2"
 }
 
 # Symlinks under the agent's skills/ and rules/ that point into this checkout.

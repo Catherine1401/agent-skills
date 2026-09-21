@@ -54,6 +54,19 @@ Skill names use lowercase kebab-case and must match their source directory.
 `manifest.yaml` is the install source of truth; `shared-rules/` contains
 canonical cross-agent policy.
 
+## User policy
+
+`shared-rules/user.md` holds your user-level instructions for every agent. The
+installer writes it as a managed block in `~/.claude/CLAUDE.md` and
+`~/.codex/AGENTS.md`, and generates `~/.cursor/rules/user.mdc`. Edit the file in
+this repository, then run `./install.sh` (or `./sync.sh` on other machines).
+Edits made inside the installed copies are overwritten on the next run; text
+outside the managed block is kept.
+
+Add another policy with a `policies:` entry in `manifest.yaml`: `source` under
+`shared-rules/`, plus `cursor` (a ready `.mdc`) or `cursor_header` (a
+frontmatter file joined with `source` at install time).
+
 ## Installer options
 
 ```text

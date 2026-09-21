@@ -97,7 +97,7 @@ uninstall_managed_rule() {
 
 uninstall_agent() {
   remove_links "$1"
-  { agent_skill_targets "$1"; agent_rule_targets "$1"; } | while IFS='|' read -r ags_source ags_target; do
+  { agent_skill_targets "$1"; agent_rule_targets "$1"; } | while IFS='|' read -r ags_source ags_target _; do
     uninstall_target "$ags_source" "$ags_target"
   done
   agent_managed_rules "$1" | while IFS='|' read -r ags_target _ ags_marker; do

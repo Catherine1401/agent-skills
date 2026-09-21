@@ -5,6 +5,9 @@ policies:
   commit:
     source: shared-rules/commit.md
     cursor: adapters/cursor/commit.mdc
+  user:
+    source: shared-rules/user.md
+    cursor_header: adapters/cursor/user.frontmatter
 skills:
   commit:
     source: skills/commit
