@@ -11,3 +11,4 @@ description: Prepare focused Git commits when asked to commit or split commits. 
 - Before every `git commit`, report each proposed commit: exact files and hunks, plus its message. Wait for explicit approval before committing.
 - Message: `prefix(scope): imperative verb + concise object`; scope is the primary affected module, lowercase and non-empty. Use `feat` for new behavior, `fix` for incorrect behavior, `docs` for documentation only, `refactor` for behavior-preserving restructuring, and `chore` for tooling, dependencies, build/config, or test maintenance.
 - Never add `Co-authored-by` or any coauthor attribution.
+- Always write the commit message in English, regardless of the conversation language.
