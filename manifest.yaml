@@ -15,3 +15,5 @@ skills:
     source: skills/user-policy
   skill-creator:
     source: skills/skill-creator
+  use:
+    source: skills/use

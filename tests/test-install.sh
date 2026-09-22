@@ -21,6 +21,10 @@ HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/.claude
 [ "$(readlink "$ags_tmp/.codex/skills/skill-creator")" = "$ags_root/skills/skill-creator" ]
 [ -L "$ags_tmp/.claude/skills/skill-creator" ]
 [ -L "$ags_tmp/.cursor/skills/skill-creator" ]
+[ -L "$ags_tmp/.codex/skills/use" ]
+[ "$(readlink "$ags_tmp/.codex/skills/use")" = "$ags_root/skills/use" ]
+[ -L "$ags_tmp/.claude/skills/use" ]
+[ -L "$ags_tmp/.cursor/skills/use" ]
 [ -L "$ags_tmp/.cursor/rules/global.mdc" ]
 [ -L "$ags_tmp/.cursor/rules/commit.mdc" ]
 grep -Fqx '# Local instructions' "$ags_tmp/.codex/AGENTS.md"
@@ -42,6 +46,7 @@ grep -Fq 'Respond in Vietnamese.' "$ags_tmp/.codex/AGENTS.md"
 
 HOME="$ags_tmp/copy-home" CLAUDE_CONFIG_DIR="$ags_tmp/copy-home/.claude" "$ags_root/install.sh" --agent claude --mode copy --no-rules
 [ -f "$ags_tmp/copy-home/.claude/skills/commit/SKILL.md" ]
+[ -f "$ags_tmp/copy-home/.claude/skills/use/SKILL.md" ]
 
 cp -R "$ags_root" "$ags_tmp/multi-repo"
 mkdir -p "$ags_tmp/multi-repo/skills/test-skill"
