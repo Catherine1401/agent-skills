@@ -17,3 +17,5 @@ skills:
     source: skills/skill-creator
   use:
     source: skills/use
+  report:
+    source: skills/report
