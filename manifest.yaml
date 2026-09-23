@@ -15,6 +15,8 @@ skills:
     source: skills/user-policy
   skill-creator:
     source: skills/skill-creator
+  skill-creator-pj:
+    source: skills/skill-creator-pj
   use:
     source: skills/use
   report:
