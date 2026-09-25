@@ -5,6 +5,7 @@ description: Update the shared user-level policy for Codex, Claude Code, and Cur
 
 - Edit only `shared-rules/user.md`.
 - Translate the user's requirement into the fewest actionable rules that change agent decisions.
+- Write all policy rules in English, without exception.
 - Keep only the source of truth. Never edit installed policy copies directly.
 - Preserve unrelated rules and user intent. Remove redundant, generic, or conflicting rules.
 - Run `./tests/test-install.sh`.
