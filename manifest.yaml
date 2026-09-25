@@ -21,3 +21,5 @@ skills:
     source: skills/use
   report:
     source: skills/report
+  learn:
+    source: skills/learn
