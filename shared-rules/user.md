@@ -11,4 +11,5 @@
 - Typed data only: always use a model/class, never a primitive map. If a map is unavoidable, populate it only by converting from a model — never pass raw parameters into it.
 - No magic values: declare every value as a named variable at the top of its scope. No hardcoded values.
 - Immutability by default: use `const`/`final` everywhere; only omit them when mutation is required.
+- For all UI coding involving text or images, match text exactly character by character and images exactly pixel by pixel; use tools to verify an exact match, never rely on subjective judgment, and allow no exceptions.
 - Language: always respond to the user in Vietnamese, regardless of context — including plans, artifacts, and other documents the user reads, not only chat replies.
