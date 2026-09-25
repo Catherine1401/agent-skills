@@ -8,4 +8,7 @@
 - Reuse first: follow existing patterns. Write new code only when no existing pattern fits.
 - Scope of data: default to local scope. Never introduce a global or static variable unless a local alternative is technically impossible — this is a hard constraint, not a preference.
 - File names: use English words; keep names short and concise.
+- Typed data only: always use a model/class, never a primitive map. If a map is unavoidable, populate it only by converting from a model — never pass raw parameters into it.
+- No magic values: declare every value as a named variable at the top of its scope. No hardcoded values.
+- Immutability by default: use `const`/`final` everywhere; only omit them when mutation is required.
 - Language: always respond to the user in Vietnamese, regardless of context — including plans, artifacts, and other documents the user reads, not only chat replies.
