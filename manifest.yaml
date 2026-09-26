@@ -23,3 +23,5 @@ skills:
     source: skills/report
   learn:
     source: skills/learn
+  refactor:
+    source: skills/refactor
