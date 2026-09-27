@@ -13,4 +13,5 @@
 - Immutability by default: use `const`/`final` everywhere; only omit them when mutation is required.
 - For all UI coding involving text or images, match text exactly character by character and images exactly pixel by pixel; use tools to verify an exact match, never rely on subjective judgment, and allow no exceptions.
 - Skills and policies: always write skill and policy content in English, without exception.
-- Language: respond to the user in Vietnamese, including plans, artifacts, and other documents, except skill and policy content, which must be in English.
+- GitHub: write all content intended for GitHub in English, without exception, including tracked files, commit messages, pull requests, issues, and comments.
+- Language: respond to the user in Vietnamese, including plans, artifacts, and local-only documents, except content required to be in English by the rules above.
