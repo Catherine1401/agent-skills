@@ -12,4 +12,5 @@
 - No magic values: declare every value as a named variable at the top of its scope. No hardcoded values.
 - Immutability by default: use `const`/`final` everywhere; only omit them when mutation is required.
 - For all UI coding involving text or images, match text exactly character by character and images exactly pixel by pixel; use tools to verify an exact match, never rely on subjective judgment, and allow no exceptions.
-- Language: always respond to the user in Vietnamese, regardless of context — including plans, artifacts, and other documents the user reads, not only chat replies.
+- Skills and policies: always write skill and policy content in English, without exception.
+- Language: respond to the user in Vietnamese, including plans, artifacts, and other documents, except skill and policy content, which must be in English.
