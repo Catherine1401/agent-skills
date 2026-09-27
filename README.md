@@ -26,6 +26,33 @@ Use `copy` for an independent installation that you update manually.
 | Claude Code | `~/.claude` |
 | Cursor | `~/.cursor` |
 
+The installer places skills in `<configuration-directory>/skills/`. The paths
+above are the current script defaults; override them with `CODEX_HOME`,
+`CLAUDE_CONFIG_DIR`, or `CURSOR_CONFIG_DIR`.
+
+## Available skills
+
+Skills are registered in [manifest.yaml](manifest.yaml); every manifest skill
+is installed for all three agents.
+
+| Skill | Purpose |
+| --- | --- |
+| `commit` | Prepare task-scoped commits and wait for user approval. |
+| `user-policy` | Update shared policy, test it, and install it for all three agents. |
+| `skill-creator` | Create or update portable skills. |
+| `skill-creator-pj` | Create or update project-local skills; the generated project skills are not registered or installed by this repository. |
+| `use` | Reuse complete skill instructions already embedded in the prompt. |
+| `report` | Save or update task handoffs in `.docs/context/`. |
+| `learn` | Save verified lessons in `.docs/learn/`, one file per conversation. |
+| `refactor` | Delegate rule verification of every changed file type to a `verify` subagent with a separate context. |
+| `test` | Guide users through testing changed code; provide mocks when the user says required APIs or backend dependencies are unavailable. |
+
+Invoke `$refactor` to request verification. The skill creates a `verify`
+subagent at runtime; it does not install a subagent configuration or a separate
+`$verify` command. If the environment cannot provide a fresh-context subagent,
+the skill reports incomplete verification instead of reading all rules in the
+main context.
+
 ## Update on another machine
 
 After pushing a change from one machine, use a clean `main` checkout on another:
@@ -53,6 +80,12 @@ changes or divergent history would make an update unsafe.
 Skill names use lowercase kebab-case and must match their source directory.
 `manifest.yaml` is the install source of truth; `shared-rules/` contains
 canonical cross-agent policy.
+
+`SKILL.md` requires YAML frontmatter with a matching `name` and a non-empty
+`description`. Skill and policy content must be in English. Installer tests
+verify distribution, not frontmatter or skill behavior; validate those
+separately. See [CONTRIBUTING.md](CONTRIBUTING.md) for the sync test fixture
+limitations.
 
 ## User policy
 
