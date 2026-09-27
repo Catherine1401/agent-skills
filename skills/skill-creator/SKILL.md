@@ -1,13 +1,25 @@
 ---
 name: skill-creator
-description: Create or update an agent skill with focused instructions and only the resources it needs. Use for skills; not policies, plugins, or project implementation.
+description: Create or update an agent skill with appropriately scoped instructions and necessary resources. Use for skills; not policies, plugins, or project implementation.
 ---
 
-- Preserve the user's intent, scope, product choices, and authorization boundaries. Do not turn examples or preferences into universal rules.
-- Include only non-obvious guidance that changes agent decisions. Remove generic, redundant, conflicting, or speculative instructions.
-- Use lowercase letters, digits, and hyphens in a name under 64 characters. Name the directory after the skill and include a valid `SKILL.md` frontmatter.
-- Write skill content in English, regardless of the conversation language.
-- Keep the description concise and discriminating. Keep `SKILL.md` self-contained; add scripts, references, assets, or UI metadata only when they provide a concrete benefit.
-- Put conditional detail in linked resources. Do not add auxiliary documentation, placeholders, or examples without a direct use.
-- Preserve unrelated files and metadata when updating. Keep automatic invocation unless the user explicitly requests explicit-only invocation.
-- Validate the skill structure, then run `./tests/test-install.sh`.
+- Optimize for agent execution: retain only instructions that change decisions or improve results. Remove prose, headings, examples, alternatives, and files unless they resolve an operational ambiguity. Assume the agent is capable; omit generic advice, repeated rules, and speculative edge cases.
+- Preserve the user's intent, scope, product choices, and authorization boundaries. Do not turn examples, past failures, or preferences into universal requirements, or imply permission to change unrelated configuration or perform additional external actions.
+- For retrying or externally mutating workflows, define a stopping condition proportional to the risk. Approval to complete a task does not expand its scope or execution permissions.
+- Match specificity to risk: describe outcomes and decision criteria for open-ended work; require fixed sequences, parameters, or deterministic scripts only when deviation would cause a concrete correctness, safety, or permissions problem. Preserve non-obvious operational invariants; distinguish requirements from recommendations and local conventions.
+- Keep names and descriptions concise and discriminating about capability and applicability. Add exclusions only to prevent likely misrouting; avoid exhaustive capability lists and catchalls for unrelated tasks.
+- Keep skills self-contained. Depend on another skill or tool only when the workflow genuinely requires it and the target environment provides it. Require specialized review only when requested or genuinely needed.
+- Adapt the work to the request; narrow updates need only focused edits and validation. Ask only when missing information matters and cannot reasonably be inferred; do not request more examples when the task is clear.
+- Respect the user's chosen location and preserve an existing skill's location when updating. For new skills, use a directory discoverable by the target agent; for Codex, default to `$CODEX_HOME/skills`, or `~/.codex/skills` when unset.
+- Use lowercase letters, digits, and hyphens in names under 64 characters; prefer short action-oriented names. Namespace by tool or domain when it improves discovery; name the folder after the skill.
+- Include YAML frontmatter with `name` and `description` in `SKILL.md`. Preserve supported optional fields such as `metadata` when appropriate; do not change unrelated files or metadata.
+- Keep purpose, essential constraints, shared workflow, and mode-selection criteria in `SKILL.md`. Move substantial conditional detail into linked resources with reading conditions; do not load every resource by default or duplicate content. Short skills do not need a routing layer.
+- Add `scripts/` only to avoid repeatedly rewriting the same logic or when deterministic execution improves reliability. Run new or changed scripts to validate behavior.
+- Use `references/` for task-specific information needed in particular contexts; keep one source for each piece of information. For large references, add search terms or a short contents section when useful. Inspect callers and purpose before removing existing resources.
+- Use `assets/` for files included in generated output; do not load them as instructions unless inspection is needed. Do not create directories, placeholders, READMEs, installation guides, or auxiliary documentation without a concrete need.
+- For `agents/openai.yaml`, add UI metadata only when useful and optional interface fields only when the user provides or requests them. If the bundled toolkit includes `references/openai_yaml.md`, read it before editing; keep values consistent with the skill and preserve unrelated policy, dependencies, and fields.
+- Preserve existing invocation policy unless the user requests a change. New skills allow automatic selection by default; set `policy.allow_implicit_invocation: false` only when the user explicitly requests explicit-only invocation. Do not infer this mode from sensitive operations or approval requirements; require authorization immediately before the actual mutation.
+- Use a bundled initializer when available and useful for creating a new skill consistently; do not reinitialize existing skills. Request only necessary resources; replace or remove placeholders before finishing. Do not use a generator that replaces all metadata when existing policy or dependencies must be preserved.
+- Use a bundled validator when available to check frontmatter, naming, and unfinished placeholders. Also check description precision, scope, resource discoverability, and script behavior; structural validation does not prove decision quality.
+- When behavioral testing is warranted, verify observable outcomes or meaningful invariants; avoid tests that merely match wording, headings, or regex patterns. Improve from real usage or demonstrated failures; prefer narrow corrections over accumulating universal rules.
+- Use independent subagent evaluation only when complexity or risk makes behavioral validation useful and delegation is available and authorized. Provide a realistic request, the skill, and minimum raw artifacts; withhold intended answers, suspected bugs, and prior conclusions unless needed. Use an isolated temporary workspace and constrain resources and side effects; ask for approval if additional authorization, production impact, or substantial time or cost is involved. Change only what observed outcomes and artifacts support.
