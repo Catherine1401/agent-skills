@@ -23,5 +23,6 @@ description: Create or update a searchable task context handoff when the user as
   ```
 
 - Keep the body operational and factual. Include: objective and success criteria; scope; mandatory rules, conventions, and constraints; verified codebase findings and relevant entry points/data flow; completed changes and reasons; git state; commands and test results; blockers/risks; remaining work; and the next concrete action.
+- Record patterns found during the task with source files/symbols, when to follow them, and what was reused or why a new approach was needed.
 - Preserve valid information while removing stale information. Mark assumptions and open questions explicitly; never record secrets or personal data.
 - Treat `branch` and `head` as the repository anchor. A later agent must act from the report and only revalidate findings that changed after that anchor.
