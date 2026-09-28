@@ -27,3 +27,5 @@ skills:
     source: skills/refactor
   test:
     source: skills/test
+  ok:
+    source: skills/ok
