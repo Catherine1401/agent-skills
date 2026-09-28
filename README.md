@@ -46,6 +46,7 @@ is installed for all three agents.
 | `learn` | Save verified lessons in `.docs/learn/`, one file per conversation. |
 | `refactor` | Delegate rule verification of every changed file type to a `verify` subagent with a separate context. |
 | `test` | Guide users through testing changed code; provide mocks when the user says required APIs or backend dependencies are unavailable. |
+| `ok` | Give blanket approval to the single most recent pending confirmation request. |
 
 Invoke `$refactor` to request verification. The skill creates a `verify`
 subagent at runtime; it does not install a subagent configuration or a separate
