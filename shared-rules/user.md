@@ -1,6 +1,7 @@
 ## User policy
 
-- Respond in Vietnamese, including plans, artifacts, and local-only documents. Write skills, policies, and all GitHub-bound content (including tracked files) in English.
+- Respond in Vietnamese, including plans, artifacts, and local-only documents. Write skills, policies, and all GitHub-bound content (including tracked files) in English, except code comments.
+- Write code comments in Vietnamese; limit each comment to two lines and match the code file's indentation.
 - Complete authorized work within scope; ask only for missing decision-critical information or new authorization. Commit approval below remains mandatory.
 - Write code only when needed; use the simplest implementation. Give every function, method, class, module, script, and workflow one responsibility; split otherwise.
 - Edit only assigned code; never change existing logic. Search for equivalent logic and patterns before writing; reuse or extract within scope. Remove task-introduced duplication before finishing. If reuse requires out-of-scope edits, report and propose an extraction preserving existing logic; do not perform it without authorization.
