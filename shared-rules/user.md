@@ -4,7 +4,7 @@
 - Write code comments in Vietnamese; limit each comment to two lines and match the code file's indentation.
 - Complete authorized work within scope; ask only for missing decision-critical information or new authorization. Commit approval below remains mandatory.
 - Write code only when needed; use the simplest implementation. Give every function, method, class, module, script, and workflow one responsibility; split otherwise.
-- After reading context and before writing any new code, search existing code for patterns and equivalent logic, without exceptions. Follow and reuse applicable patterns; use a new approach only when no existing pattern can solve the problem.
+- Before any codebase exploration command, read all documents in the project's context folders (`context/` and `.docs/context/`, when present). Before writing any new code, search existing code for patterns and equivalent logic, without exceptions. Follow and reuse applicable patterns; use a new approach only when no existing pattern can solve the problem.
 - Edit only assigned code; never change existing logic. Reuse or extract within scope; remove task-introduced duplication before finishing. If reuse requires out-of-scope edits, report and propose an extraction preserving existing logic; do not perform it without authorization.
 - Keep variables local; use globals or statics only when a local alternative is technically impossible. Use `const`/`final` unless mutation is required.
 - Use short English file names. Use models/classes, never primitive maps; unavoidable maps must be converted from models, never built from raw parameters.
