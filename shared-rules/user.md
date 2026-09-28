@@ -9,7 +9,7 @@
 - Scope of data: default to local scope. Never introduce a global or static variable unless a local alternative is technically impossible — this is a hard constraint, not a preference.
 - File names: use English words; keep names short and concise.
 - Typed data only: always use a model/class, never a primitive map. If a map is unavoidable, populate it only by converting from a model — never pass raw parameters into it.
-- No magic values: declare every value as a named variable at the top of its scope. No hardcoded values.
+- No magic values: declare every literal as a named constant/variable at the top of its scope, with no exceptions for literals that occur only once or are unique to one call site. Never leave a literal inline because it does not repeat elsewhere or because other code in the codebase inlines similar literals.
 - Immutability by default: use `const`/`final` everywhere; only omit them when mutation is required.
 - For all UI coding involving text or images, match text exactly character by character and images exactly pixel by pixel; use tools to verify an exact match, never rely on subjective judgment, and allow no exceptions.
 - Skills and policies: always write skill and policy content in English, without exception.
