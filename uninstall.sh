@@ -65,35 +65,6 @@ uninstall_target() {
   done
 }
 
-uninstall_managed_rule() {
-  ags_target=$1
-  ags_marker=$2
-  [ "$(managed_rule_count "$ags_target" "$ags_marker")" -eq 2 ] || return 0
-  printf '%s\n' "remove rule: $ags_target ($ags_marker)"
-  [ "$ags_dry_run" -eq 1 ] && return
-  ags_tmp=$(mktemp "$(dirname -- "$ags_target")/.agent-skills.XXXXXX")
-  awk -v marker="$ags_marker" '
-    $0 == marker {
-      marker_count++
-      if (marker_count == 1) {
-        in_block = 1
-        held = 0
-      } else {
-        in_block = 0
-      }
-      next
-    }
-    in_block { next }
-    {
-      if (held) print ""
-      held = ($0 == "")
-      if (!held) print
-    }
-    END { if (held) print "" }
-  ' "$ags_target" > "$ags_tmp"
-  cat "$ags_tmp" > "$ags_target"
-  rm -f -- "$ags_tmp"
-}
 
 uninstall_agent() {
   remove_links "$1"

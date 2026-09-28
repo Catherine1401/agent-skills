@@ -138,6 +138,7 @@ install_agent() {
     install_target "$ags_source" "$ags_target"
   done
   if [ "$ags_rules" -eq 1 ]; then
+    validate_legacy_rules "$1"
     agent_rule_targets "$1" | while IFS='|' read -r ags_source ags_target ags_header; do
       if [ -n "$ags_header" ]; then
         install_generated_rule "$ags_header" "$ags_source" "$ags_target"
@@ -148,6 +149,7 @@ install_agent() {
     agent_managed_rules "$1" | while IFS='|' read -r ags_target ags_source ags_marker; do
       install_managed_rule "$ags_target" "$ags_source" "$ags_marker"
     done
+    migrate_legacy_rules "$1"
   fi
 }
 

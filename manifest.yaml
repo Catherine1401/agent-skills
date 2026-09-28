@@ -1,10 +1,4 @@
 policies:
-  global:
-    source: shared-rules/global.md
-    cursor: adapters/cursor/global.mdc
-  commit:
-    source: shared-rules/commit.md
-    cursor: adapters/cursor/commit.mdc
   user:
     source: shared-rules/user.md
     cursor_header: adapters/cursor/user.frontmatter

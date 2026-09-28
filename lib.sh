@@ -175,3 +175,104 @@ agent_links() {
     fi
   done
 }
+
+uninstall_managed_rule() {
+  ags_target=$1
+  ags_marker=$2
+  [ "$(managed_rule_count "$ags_target" "$ags_marker")" -eq 2 ] || return 0
+  printf '%s\n' "remove rule: $ags_target ($ags_marker)"
+  [ "$ags_dry_run" -eq 1 ] && return
+  ags_tmp=$(mktemp "$(dirname -- "$ags_target")/.agent-skills.XXXXXX")
+  awk -v marker="$ags_marker" '
+    $0 == marker {
+      marker_count++
+      if (marker_count == 1) {
+        in_block = 1
+        held = 0
+      } else {
+        in_block = 0
+      }
+      next
+    }
+    in_block { next }
+    {
+      if (held) print ""
+      held = ($0 == "")
+      if (!held) print
+    }
+    END { if (held) print "" }
+  ' "$ags_target" > "$ags_tmp"
+  cat "$ags_tmp" > "$ags_target"
+  rm -f -- "$ags_tmp"
+}
+
+legacy_policy_names() (
+  readonly ags_global_name='global' ags_commit_name='commit' ags_line_format='%s\n'
+  printf "$ags_line_format" "$ags_global_name" "$ags_commit_name"
+)
+
+# Reuse manifest-derived destinations; legacy policies are no longer manifest entries.
+legacy_managed_rules() (
+  readonly ags_legacy_separator='|' ags_target_field=1 ags_pair_format='%s|%s\n'
+  agent_managed_rules "$1" | cut -d "$ags_legacy_separator" -f "$ags_target_field" | sort -u |
+    while IFS= read -r ags_target; do
+      legacy_policy_names | while IFS= read -r ags_name; do
+        printf "$ags_pair_format" "$ags_target" "$(policy_marker "$ags_name")"
+      done
+    done
+)
+
+validate_legacy_rules() (
+  readonly ags_validate_separator='|'
+  legacy_managed_rules "$1" | while IFS="$ags_validate_separator" read -r ags_target ags_marker; do
+    managed_rule_count "$ags_target" "$ags_marker" >/dev/null
+  done
+)
+
+# Fingerprints identify unmodified copies without retaining duplicate policy text.
+is_legacy_cursor_rule() (
+  readonly ags_match_name=$1 ags_match_target=$2
+  readonly ags_global_name='global' ags_commit_name='commit' ags_success=0 ags_failure=1
+  readonly ags_global_hash='a42432f3a2f340fa140e6a2ab72e34e54ebc0ac2409081142458788ab007ed17'
+  readonly ags_commit_hash='d0d69532ad6159c3c0187e0980df1f43d48bfb4253c783be35c9ccfa94db2e98'
+  readonly ags_old_source="$ags_root/adapters/cursor/$ags_match_name.mdc"
+  if [ -L "$ags_match_target" ]; then
+    [ "$(readlink "$ags_match_target")" = "$ags_old_source" ]
+    return
+  fi
+  [ -f "$ags_match_target" ] || return "$ags_failure"
+  sha256sum -- "$ags_match_target" | while read -r ags_digest _; do
+    case "$ags_match_name" in
+      "$ags_global_name") [ "$ags_digest" = "$ags_global_hash" ] && return "$ags_success" ;;
+      "$ags_commit_name") [ "$ags_digest" = "$ags_commit_hash" ] && return "$ags_success" ;;
+    esac
+    return "$ags_failure"
+  done
+)
+
+remove_legacy_cursor_rule() (
+  readonly ags_remove_name=$1 ags_remove_target=$2 ags_dry_run_enabled=1 ags_remove_success=0
+  readonly ags_remove_format='remove legacy rule: %s\n' ags_skip_format='skip legacy rule: %s (unrecognized content)\n'
+  [ -e "$ags_remove_target" ] || [ -L "$ags_remove_target" ] || return "$ags_remove_success"
+  if ! is_legacy_cursor_rule "$ags_remove_name" "$ags_remove_target"; then
+    printf "$ags_skip_format" "$ags_remove_target"
+    return
+  fi
+  printf "$ags_remove_format" "$ags_remove_target"
+  [ "$ags_dry_run" -eq "$ags_dry_run_enabled" ] || rm -f -- "$ags_remove_target"
+)
+
+migrate_legacy_rules() (
+  readonly ags_cursor_name='cursor' ags_separator='|' ags_rules_suffix='/rules' ags_rule_extension='.mdc'
+  readonly ags_rules_home="$(agent_home "$1")$ags_rules_suffix"
+  if [ "$1" = "$ags_cursor_name" ]; then
+    legacy_policy_names | while IFS= read -r ags_name; do
+      ags_legacy_target="$ags_rules_home/$ags_name$ags_rule_extension"
+      remove_legacy_cursor_rule "$ags_name" "$ags_legacy_target"
+    done
+  else
+    legacy_managed_rules "$1" | while IFS="$ags_separator" read -r ags_target ags_marker; do
+      uninstall_managed_rule "$ags_target" "$ags_marker"
+    done
+  fi
+)

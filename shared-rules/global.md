@@ -1,4 +1,0 @@
-## Global policy
-
-- Respond in Vietnamese.
-- For every skill create or update: optimize agent execution; retain only instructions that change an agent decision. Remove prose, headings, examples, alternatives, and files unless they resolve an operational ambiguity.

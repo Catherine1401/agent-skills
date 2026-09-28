@@ -29,24 +29,34 @@ HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/.claude
 [ "$(readlink "$ags_tmp/.codex/skills/report")" = "$ags_root/skills/report" ]
 [ -L "$ags_tmp/.claude/skills/report" ]
 [ -L "$ags_tmp/.cursor/skills/report" ]
-[ -L "$ags_tmp/.cursor/rules/global.mdc" ]
-[ -L "$ags_tmp/.cursor/rules/commit.mdc" ]
+(
+  readonly ags_global_rule="$ags_tmp/.cursor/rules/global.mdc" ags_commit_rule="$ags_tmp/.cursor/rules/commit.mdc"
+  readonly ags_codex_rules="$ags_tmp/.codex/AGENTS.md"
+  readonly ags_global_marker='<!-- agent-skills:global -->' ags_commit_marker='<!-- agent-skills:commit -->'
+  [ ! -e "$ags_global_rule" ] && [ ! -L "$ags_global_rule" ]
+  [ ! -e "$ags_commit_rule" ] && [ ! -L "$ags_commit_rule" ]
+  ! grep -Fq "$ags_global_marker" "$ags_codex_rules"
+  ! grep -Fq "$ags_commit_marker" "$ags_codex_rules"
+)
 grep -Fqx '# Local instructions' "$ags_tmp/.codex/AGENTS.md"
-[ "$(grep -Fxc '<!-- agent-skills:global -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
-[ "$(grep -Fxc '<!-- agent-skills:commit -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
 [ "$(grep -Fxc '<!-- agent-skills:user -->' "$ags_tmp/.codex/AGENTS.md")" = 2 ]
 [ "$(grep -Fxc '<!-- agent-skills:user -->' "$ags_tmp/.claude/CLAUDE.md")" = 2 ]
 [ -f "$ags_tmp/.cursor/rules/user.mdc" ] && [ ! -L "$ags_tmp/.cursor/rules/user.mdc" ]
 grep -Fqx 'alwaysApply: true' "$ags_tmp/.cursor/rules/user.mdc"
 grep -Fqx '<!-- agent-skills:user -->' "$ags_tmp/.cursor/rules/user.mdc"
 grep -Fqx '## User policy' "$ags_tmp/.cursor/rules/user.mdc"
-grep -Fq 'Respond in Vietnamese.' "$ags_tmp/.codex/AGENTS.md"
-
-sed 's/Respond in Vietnamese\./Stale policy./' "$ags_tmp/.codex/AGENTS.md" > "$ags_tmp/AGENTS.md"
-mv "$ags_tmp/AGENTS.md" "$ags_tmp/.codex/AGENTS.md"
-HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" "$ags_root/install.sh" --agent codex
-grep -Fq 'Respond in Vietnamese.' "$ags_tmp/.codex/AGENTS.md"
-! grep -Fq 'Stale policy.' "$ags_tmp/.codex/AGENTS.md"
+(
+  readonly ags_language_rule='Respond in Vietnamese,' ags_stale_rule='Stale policy.'
+  readonly ags_stale_replacement='s/Respond in Vietnamese,/Stale policy./'
+  readonly ags_codex_home="$ags_tmp/.codex" ags_codex_rules="$ags_tmp/.codex/AGENTS.md" ags_rules_copy="$ags_tmp/AGENTS.md"
+  readonly ags_installer="$ags_root/install.sh" ags_codex_agent='codex'
+  grep -Fq "$ags_language_rule" "$ags_codex_rules"
+  sed "$ags_stale_replacement" "$ags_codex_rules" > "$ags_rules_copy"
+  mv "$ags_rules_copy" "$ags_codex_rules"
+  HOME="$ags_tmp" CODEX_HOME="$ags_codex_home" "$ags_installer" --agent "$ags_codex_agent"
+  grep -Fq "$ags_language_rule" "$ags_codex_rules"
+  ! grep -Fq "$ags_stale_rule" "$ags_codex_rules"
+)
 
 HOME="$ags_tmp/copy-home" CLAUDE_CONFIG_DIR="$ags_tmp/copy-home/.claude" "$ags_root/install.sh" --agent claude --mode copy --no-rules
 [ -f "$ags_tmp/copy-home/.claude/skills/commit/SKILL.md" ]
@@ -147,8 +157,10 @@ for ags_agent_home in "$ags_tmp/sync-home/.codex" "$ags_tmp/sync-home/.claude" "
   [ -L "$ags_agent_home/skills/commit" ]
 done
 [ -L "$ags_tmp/sync-home/.claude/skills/foreign" ]
-[ -L "$ags_tmp/sync-home/.cursor/rules/global.mdc" ]
-[ -L "$ags_tmp/sync-home/.cursor/rules/commit.mdc" ]
+(
+  readonly ags_sync_user_rule="$ags_tmp/sync-home/.cursor/rules/user.mdc"
+  [ -f "$ags_sync_user_rule" ]
+)
 printf '%s\n' 'dirty' >> "$ags_tmp/sync-repo/README.md"
 if HOME="$ags_tmp/sync-home" "$ags_tmp/sync-repo/sync.sh" >/dev/null 2>&1; then
   printf '%s\n' 'sync accepted a dirty repository' >&2
@@ -261,7 +273,10 @@ awk '{ print } /^policies:/ { print "  extra:"; print "    source: shared-rules/
 mv "$ags_tmp/policy-manifest.yaml" "$ags_tmp/policy-repo/manifest.yaml"
 HOME="$ags_tmp/policy-home" CODEX_HOME="$ags_tmp/policy-home/.codex" "$ags_tmp/policy-repo/install.sh" --agent codex
 [ "$(grep -Fxc '<!-- agent-skills:extra -->' "$ags_tmp/policy-home/.codex/AGENTS.md")" = 2 ]
-[ "$(grep -Fxc '<!-- agent-skills:global -->' "$ags_tmp/policy-home/.codex/AGENTS.md")" = 2 ]
+(
+  readonly ags_extra_rules="$ags_tmp/policy-home/.codex/AGENTS.md" ags_user_marker='<!-- agent-skills:user -->' ags_marker_pair=2
+  [ "$(grep -Fxc "$ags_user_marker" "$ags_extra_rules")" -eq "$ags_marker_pair" ]
+)
 grep -Fqx '## Extra policy' "$ags_tmp/policy-home/.codex/AGENTS.md"
 rm "$ags_tmp/policy-repo/shared-rules/extra.md"
 if HOME="$ags_tmp/policy-bad-home" CODEX_HOME="$ags_tmp/policy-bad-home/.codex" "$ags_tmp/policy-repo/install.sh" --agent codex >/dev/null 2>&1; then
@@ -301,5 +316,120 @@ ln -s "$ags_tmp/un-repo/shared-rules/user.md" "$ags_user_rule"
 un_env "$ags_tmp/un-repo/install.sh" --agent cursor --force
 [ ! -L "$ags_user_rule" ]
 cmp "$ags_tmp/un-repo/shared-rules/user.md" "$ags_tmp/user-md-original"
+
+test_policy_migration() (
+  readonly migration_home="$ags_tmp/migration-home" migration_before="$ags_tmp/migration-before"
+  readonly migration_fixture="$ags_root/tests/fixtures/policies" migration_installer="$ags_root/install.sh"
+  readonly migration_rule_extension='.mdc' migration_old_directory="$ags_root/adapters/cursor"
+  readonly migration_codex_home="$migration_home/.codex" migration_claude_home="$migration_home/.claude" migration_cursor_home="$migration_home/.cursor"
+  readonly migration_codex="$migration_home/.codex/AGENTS.md" migration_claude="$migration_home/.claude/CLAUDE.md"
+  readonly migration_cursor="$migration_home/.cursor/rules" migration_log="$ags_tmp/migration.log"
+  readonly migration_before_codex="$migration_before/.codex/AGENTS.md" migration_before_claude="$migration_before/.claude/CLAUDE.md"
+  readonly migration_before_cursor="$migration_before/.cursor/rules" migration_before_global="$migration_before/.cursor/rules/global.mdc"
+  readonly migration_cursor_global="$migration_cursor/global.mdc" migration_cursor_commit="$migration_cursor/commit.mdc" migration_cursor_user="$migration_cursor/user.mdc"
+  readonly migration_modes='copy symlink' migration_copy='copy' migration_names='global commit'
+  readonly migration_line='%s\n' migration_prefix='# Local instructions' migration_middle='Keep this middle line.'
+  readonly migration_suffix='Keep this last line.' migration_old='Old policy.' migration_changed='User edit.'
+  readonly migration_global_marker='<!-- agent-skills:global -->' migration_commit_marker='<!-- agent-skills:commit -->'
+  readonly migration_user_marker='<!-- agent-skills:user -->' migration_marker_count=2
+  readonly migration_foreign="$ags_tmp/foreign-rule.mdc" migration_skip='skip legacy rule:'
+  readonly migration_codex_agent='codex' migration_claude_agent='claude' migration_all_agent='all'
+  readonly migration_cursor_agent='cursor' migration_one_marker=1 migration_three_markers=3 migration_four_markers=4 migration_zero=0
+  readonly migration_failure=1 migration_error='installer accepted malformed legacy markers'
+
+  migration_env() {
+    HOME="$migration_home" CODEX_HOME="$migration_codex_home" CLAUDE_CONFIG_DIR="$migration_claude_home" CURSOR_CONFIG_DIR="$migration_cursor_home" "$@"
+  }
+
+  seed_legacy_policies() (
+    readonly migration_mode=$1
+    rm -rf -- "$migration_home" "$migration_before"
+    mkdir -p -- "$migration_codex_home" "$migration_claude_home" "$migration_cursor"
+    for migration_rules in "$migration_codex" "$migration_claude"; do
+      printf "$migration_line" "$migration_prefix" "$migration_global_marker" "$migration_old" "$migration_global_marker" \
+        "$migration_middle" "$migration_commit_marker" "$migration_old" "$migration_commit_marker" \
+        "$migration_user_marker" "$migration_old" "$migration_user_marker" "$migration_suffix" > "$migration_rules"
+    done
+    for migration_name in $migration_names; do
+      migration_source="$migration_fixture/$migration_name$migration_rule_extension"
+      migration_target="$migration_cursor/$migration_name$migration_rule_extension"
+      migration_old_source="$migration_old_directory/$migration_name$migration_rule_extension"
+      if [ "$migration_mode" = "$migration_copy" ]; then
+        cp -- "$migration_source" "$migration_target"
+      else
+        ln -s -- "$migration_old_source" "$migration_target"
+      fi
+    done
+    cp -R -- "$migration_home" "$migration_before"
+  )
+
+  assert_legacy_unchanged() {
+    cmp "$migration_codex" "$migration_before_codex"
+    cmp "$migration_claude" "$migration_before_claude"
+    diff -r --no-dereference "$migration_cursor" "$migration_before_cursor"
+  }
+
+  for migration_mode in $migration_modes; do
+    seed_legacy_policies "$migration_mode"
+    migration_env "$migration_installer" --agent "$migration_all_agent" --dry-run
+    assert_legacy_unchanged
+    migration_env "$migration_installer" --agent "$migration_all_agent" --no-rules
+    assert_legacy_unchanged
+    migration_env "$migration_installer" --agent "$migration_all_agent"
+    for migration_rules in "$migration_codex" "$migration_claude"; do
+      ! grep -Fq "$migration_global_marker" "$migration_rules"
+      ! grep -Fq "$migration_commit_marker" "$migration_rules"
+      ! grep -Fq "$migration_old" "$migration_rules"
+      [ "$(grep -Fxc "$migration_user_marker" "$migration_rules")" -eq "$migration_marker_count" ]
+      grep -Fxq "$migration_prefix" "$migration_rules"
+      grep -Fxq "$migration_middle" "$migration_rules"
+      grep -Fxq "$migration_suffix" "$migration_rules"
+    done
+    for migration_name in $migration_names; do
+      migration_target="$migration_cursor/$migration_name$migration_rule_extension"
+      [ ! -e "$migration_target" ] && [ ! -L "$migration_target" ]
+    done
+    [ -f "$migration_cursor_user" ]
+    rm -rf -- "$migration_before"
+    cp -R -- "$migration_home" "$migration_before"
+    migration_env "$migration_installer" --agent "$migration_all_agent"
+    assert_legacy_unchanged
+  done
+
+  seed_legacy_policies "$migration_copy"
+  printf "$migration_line" "$migration_changed" >> "$migration_cursor_global"
+  printf "$migration_line" "$migration_changed" > "$migration_foreign"
+  rm -- "$migration_cursor_commit"
+  ln -s -- "$migration_foreign" "$migration_cursor_commit"
+  cp -- "$migration_cursor_global" "$migration_before_global"
+  migration_env "$migration_installer" --agent "$migration_cursor_agent" > "$migration_log"
+  cmp "$migration_cursor_global" "$migration_before_global"
+  [ "$(readlink "$migration_cursor_commit")" = "$migration_foreign" ]
+  [ "$(grep -Fc "$migration_skip" "$migration_log")" -eq "$migration_marker_count" ]
+
+  for migration_agent in "$migration_codex_agent" "$migration_claude_agent"; do
+    for migration_bad_count in "$migration_one_marker" "$migration_three_markers" "$migration_four_markers"; do
+      seed_legacy_policies "$migration_copy"
+      case "$migration_agent" in
+        "$migration_codex_agent") migration_rules=$migration_codex ;;
+        "$migration_claude_agent") migration_rules=$migration_claude ;;
+      esac
+      printf "$migration_line" "$migration_prefix" "$migration_global_marker" "$migration_old" "$migration_global_marker" > "$migration_rules"
+      migration_index=$migration_zero
+      while [ "$migration_index" -lt "$migration_bad_count" ]; do
+        printf "$migration_line" "$migration_commit_marker" >> "$migration_rules"
+        migration_index=$((migration_index + migration_one_marker))
+      done
+      cp -- "$migration_rules" "$migration_log"
+      if migration_env "$migration_installer" --agent "$migration_agent" >/dev/null 2>&1; then
+        printf "$migration_line" "$migration_error" >&2
+        exit "$migration_failure"
+      fi
+      cmp "$migration_rules" "$migration_log"
+    done
+  done
+)
+
+test_policy_migration
 
 printf '%s\n' 'install tests passed'
