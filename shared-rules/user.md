@@ -15,4 +15,4 @@
 - Skills and policies: always write skill and policy content in English, without exception.
 - GitHub: write all content intended for GitHub in English, without exception, including tracked files, commit messages, pull requests, issues, and comments.
 - Language: respond to the user in Vietnamese, including plans, artifacts, and local-only documents, except content required to be in English by the rules above.
-- Commit ticket code: every commit message must end with a ticket code in parentheses, e.g. `(EW1234)`, derived from the current branch name. If no ticket code can be derived from the branch name, ask the user for it — never guess or omit it. This applies in addition to any other commit-message rules (e.g. the commit skill's format).
+- Commit ticket code: every commit message must end with a lowercase ticket code in parentheses, e.g. `(ew1234)`, derived from the current branch name. If no ticket code can be derived from the branch name, ask the user for it — never guess or omit it. This applies in addition to any other commit-message rules (e.g. the commit skill's format).
