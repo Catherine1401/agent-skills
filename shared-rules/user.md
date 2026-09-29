@@ -7,7 +7,7 @@
 - Mandatory: keep every code file at most 1000 lines and every function or method at most 100 lines; split before exceeding either limit, without exceptions.
 - Before any codebase exploration command, read all documents in the project's context folders (`context/` and `.docs/context/`, when present). Before writing any new code, search existing code for patterns and equivalent logic, without exceptions. Follow and reuse applicable patterns; use a new approach only when no existing pattern can solve the problem.
 - Edit only assigned code; never change existing logic. Reuse or extract within scope; remove task-introduced duplication before finishing. If reuse requires out-of-scope edits, report and propose an extraction preserving existing logic; do not perform it without authorization.
-- Keep variables local; use globals or statics only when a local alternative is technically impossible. Use `const`/`final` unless mutation is required.
+- Mandatory: declare every variable and constant at the narrowest scope that all its users can see: inside its single function, or else the nearest enclosing scope shared by all its users; never default to file-level, never widen beyond that, without exceptions. Use globals or statics only when no narrower scope is technically possible. Use `const`/`final` unless mutation is required.
 - Use short English file names. Use models/classes, never primitive maps; unavoidable maps must be converted from models, never built from raw parameters.
 - Name every literal as a constant/variable at the top of its scope, without exceptions.
 - Match UI text character for character and images pixel for pixel; verify with tools, never subjective judgment, without exceptions.
