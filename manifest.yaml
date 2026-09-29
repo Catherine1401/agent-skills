@@ -7,6 +7,8 @@ skills:
     source: skills/commit
   user-policy:
     source: skills/user-policy
+  user-policy-pj:
+    source: skills/user-policy-pj
   skill-creator:
     source: skills/skill-creator
   skill-creator-pj:
