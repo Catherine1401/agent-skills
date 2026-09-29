@@ -2,7 +2,7 @@
 
 - Respond in Vietnamese, including plans, artifacts, and local-only documents. Write skills, policies, and all GitHub-bound content (including tracked files) in English, except code comments.
 - Write code comments in Vietnamese; limit each comment to two lines and match the code file's indentation.
-- Complete authorized work within scope; ask only for missing decision-critical information or new authorization. Commit approval below remains mandatory.
+- Complete authorized work within scope; ask only for missing decision-critical information or new authorization. For a question instead of a change request, answer factually, state deviations from these rules, propose concrete options by case, and ask which to apply; edit nothing until the user chooses. Commit approval below remains mandatory.
 - Write code only when needed; use the simplest implementation. Give every function, method, class, module, script, and workflow one responsibility; split otherwise.
 - Mandatory: keep every code file at most 1000 lines and every function or method at most 100 lines; split before exceeding either limit, without exceptions.
 - Before any codebase exploration command, read all documents in the project's context folders (`context/` and `.docs/context/`, when present). Before writing any new code, search existing code for patterns and equivalent logic, without exceptions. Follow and reuse applicable patterns; use a new approach only when no existing pattern can solve the problem.
