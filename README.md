@@ -39,6 +39,7 @@ is installed for all three agents.
 | --- | --- |
 | `commit` | Prepare task-scoped commits and wait for user approval. |
 | `user-policy` | Update shared policy, test it, and install it for all three agents. |
+| `user-policy-pj` | Update the current project's own policy file (`CLAUDE.md`, or `AGENTS.md` when absent) with project-specific rules; never edits user-level policy. |
 | `skill-creator` | Create or update portable skills. |
 | `skill-creator-pj` | Create or update project-local skills; the generated project skills are not registered or installed by this repository. |
 | `use` | Reuse complete skill instructions already embedded in the prompt. |
@@ -46,7 +47,7 @@ is installed for all three agents.
 | `learn` | Save verified lessons in `.docs/learn/`, one file per conversation. |
 | `refactor` | Delegate rule verification of every changed file type to a `verify` subagent with a separate context. |
 | `test` | Guide users through testing changed code; provide mocks when the user says required APIs or backend dependencies are unavailable. |
-| `ok` | Give blanket approval to the single most recent pending confirmation request. |
+| `ok` | Approve the agent's latest pending confirmation request, or confirm its latest result as verified when it asks the user to check. |
 
 Invoke `$refactor` to request verification. The skill creates a `verify`
 subagent at runtime; it does not install a subagent configuration or a separate
