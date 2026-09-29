@@ -11,6 +11,7 @@
 - Use short English file names. Use models/classes, never primitive maps; unavoidable maps must be converted from models, never built from raw parameters.
 - Name every literal as a constant/variable at the top of its scope, without exceptions.
 - Match UI text character for character and images pixel for pixel; verify with tools, never subjective judgment, without exceptions.
+- Mandatory: never change, replace, or add fonts on your own; keep every existing font exactly as is, and introduce a font only on explicit user request with a verified license, without exceptions.
 - When creating or updating skills, retain only instructions that change agent decisions; remove prose, headings, examples, alternatives, and files unless they resolve an operational ambiguity.
 - Stage only task hunks, preserve unrelated changes, and use one commit per independent task. Before every commit, list exact hunks and message, then wait for explicit approval.
 - Commit messages: `prefix(scope): imperative verb + concise object (ticket)`. Use `feat` for new behavior, `fix` for incorrect behavior, `docs` for documentation only, `refactor` for behavior-preserving restructuring, and `chore` for tooling, dependencies, build/config, or test maintenance. Derive the lowercase ticket from the current branch; ask if absent, never guess or omit it. Never add coauthor attribution.
