@@ -430,6 +430,116 @@ test_policy_migration() (
   done
 )
 
+test_projects() (
+  readonly ags_demo_id='demo' ags_home_name='proj-home' ags_store_name='proj-store' ags_wt_name='proj-outside-wt'
+  readonly ags_local_skill='local-skill' ags_config_rel='.config/agent-skills/local.yaml' ags_registry_rel='registry.yaml'
+  readonly ags_dot_claude='.claude' ags_projects_rel='projects' ags_skills_rel='skills' ags_work_rel='work'
+  readonly ags_rules_name='CLAUDE.md' ags_skill_file='SKILL.md' ags_local_settings='settings.local.json' ags_jobs_name='jobs'
+  readonly ags_origin='origin' ags_wt_branch='wt' ags_commit_message='init' ags_git_user='t' ags_git_email='t@example.com'
+  readonly ags_rules_body='# Project rules' ags_settings_body='{}' ags_roots_key='roots:' ags_skill_description='description: Local project skill.'
+  readonly ags_home="$ags_tmp/$ags_home_name" ags_store="$ags_tmp/$ags_store_name" ags_wt="$ags_tmp/$ags_wt_name"
+  readonly ags_work="$ags_home/$ags_work_rel"
+  readonly ags_remote='git@git.example.com:team/demo.git' ags_registry_remote='https://git.example.com/team/demo.git'
+  readonly ags_installer="$ags_root/install.sh" ags_uninstaller="$ags_root/uninstall.sh" ags_importer="$ags_root/import-project.sh"
+  readonly ags_project="$ags_work/$ags_demo_id" ags_stored="$ags_store/$ags_projects_rel/$ags_demo_id/$ags_dot_claude"
+  readonly ags_local_dir="$ags_project/$ags_dot_claude"
+  project_env() {
+    HOME="$ags_home" AGS_PROJECTS_DIR="$ags_store" CLAUDE_CONFIG_DIR="$ags_home/$ags_dot_claude" "$@"
+  }
+  mkdir -p "$ags_local_dir/$ags_skills_rel/$ags_local_skill" "$ags_local_dir/$ags_jobs_name" "$ags_home/$(dirname -- "$ags_config_rel")" "$ags_store"
+  printf '%s\n' '---' "name: $ags_local_skill" "$ags_skill_description" '---' > "$ags_local_dir/$ags_skills_rel/$ags_local_skill/$ags_skill_file"
+  printf '%s\n' "$ags_rules_body" > "$ags_local_dir/$ags_rules_name"
+  printf '%s\n' "$ags_settings_body" > "$ags_local_dir/$ags_local_settings"
+  git -C "$ags_project" init -q
+  git -C "$ags_project" remote add "$ags_origin" "$ags_remote"
+  git -C "$ags_project" -c user.name="$ags_git_user" -c user.email="$ags_git_email" commit -q --allow-empty -m "$ags_commit_message"
+  git -C "$ags_project" worktree add -q "$ags_wt" -b "$ags_wt_branch"
+  printf '%s\n' "$ags_roots_key" "  - $ags_work" > "$ags_home/$ags_config_rel"
+
+  project_env "$ags_importer" --id "$ags_demo_id" --path "$ags_project"
+  grep -Fqx "  $ags_demo_id: $ags_remote" "$ags_store/$ags_registry_rel"
+  [ -f "$ags_stored/$ags_skills_rel/$ags_local_skill/$ags_skill_file" ]
+  [ -f "$ags_stored/$ags_rules_name" ]
+  [ ! -e "$ags_stored/$ags_local_settings" ]
+  [ ! -e "$ags_stored/$ags_jobs_name" ]
+  sed -i "s#$ags_remote#$ags_registry_remote#" "$ags_store/$ags_registry_rel"
+
+  if project_env "$ags_installer" --scope project >/dev/null 2>&1; then
+    printf '%s\n' 'project install replaced a real directory without --force' >&2
+    exit 1
+  fi
+  project_env "$ags_installer" --scope project --force
+  for ags_target in "$ags_project" "$ags_wt"; do
+    [ -L "$ags_target/$ags_dot_claude/$ags_skills_rel" ]
+    [ "$(readlink "$ags_target/$ags_dot_claude/$ags_rules_name")" = "$ags_stored/$ags_rules_name" ]
+    [ ! -L "$ags_target/$ags_dot_claude/$ags_local_settings" ]
+  done
+  [ -f "$ags_local_dir/$ags_local_settings" ]
+
+  rm -rf "$ags_stored/$ags_rules_name"
+  project_env "$ags_installer" --scope project --prune
+  [ ! -L "$ags_local_dir/$ags_rules_name" ]
+  [ -L "$ags_local_dir/$ags_skills_rel" ]
+  project_env "$ags_installer" --agent claude --scope all --no-rules --dry-run >/dev/null
+
+  project_env "$ags_uninstaller" --scope project
+  [ ! -L "$ags_local_dir/$ags_skills_rel" ]
+  [ -f "$ags_local_dir/$ags_skills_rel/$ags_local_skill/$ags_skill_file" ]
+)
+
+test_projects_sync() (
+  readonly ags_main='main' ags_origin='origin' ags_demo_id='demo' ags_skill_name='s1' ags_skill_file='SKILL.md' ags_agent='claude'
+  readonly ags_registry_rel='registry.yaml' ags_projects_rel='projects' ags_dot_claude='.claude' ags_skills_rel='skills'
+  readonly ags_config_dir_rel='.config/agent-skills' ags_config_file='local.yaml' ags_work_rel='work' ags_roots_key='roots:'
+  readonly ags_git_user='t' ags_git_email='t@example.com' ags_remote='git@git.example.com:team/demo.git'
+  readonly ags_snapshot_message='snapshot' ags_seed_message='seed' ags_skill_body='v1' ags_dirty_line='dirty'
+  readonly ags_dirty_error='sync accepted a dirty projects checkout'
+  readonly ags_registry_body='projects:
+  demo: https://git.example.com/team/demo.git'
+  readonly ags_base="$ags_tmp/psync"
+  readonly ags_home="$ags_base/home" ags_work="$ags_base/home/$ags_work_rel"
+  readonly ags_tools_origin="$ags_base/tools.git" ags_store_origin="$ags_base/store.git"
+  readonly ags_tools="$ags_base/tools" ags_store="$ags_base/store" ags_seed="$ags_base/seed"
+  readonly ags_stored_skill="$ags_projects_rel/$ags_demo_id/$ags_dot_claude/$ags_skills_rel/$ags_skill_name"
+  readonly ags_project="$ags_work/$ags_demo_id"
+  project_git() {
+    git -c user.name="$ags_git_user" -c user.email="$ags_git_email" "$@"
+  }
+  run_sync() {
+    HOME="$ags_home" CLAUDE_CONFIG_DIR="$ags_home/$ags_dot_claude" AGS_PROJECTS_DIR="$ags_store" "$ags_tools/sync.sh" --agent "$ags_agent"
+  }
+  mkdir -p "$ags_home/$ags_config_dir_rel" "$ags_project" "$ags_seed/$ags_stored_skill"
+  git init -q --bare -b "$ags_main" "$ags_tools_origin"
+  git init -q --bare -b "$ags_main" "$ags_store_origin"
+  git clone -q "$ags_root" "$ags_tools" 2>/dev/null
+  (cd "$ags_root" && tar --exclude=.git -cf - .) | (cd "$ags_tools" && tar -xf -)
+  git -C "$ags_tools" add -A
+  project_git -C "$ags_tools" commit -q --allow-empty -m "$ags_snapshot_message"
+  git -C "$ags_tools" remote set-url "$ags_origin" "$ags_tools_origin"
+  git -C "$ags_tools" push -q "$ags_origin" "$ags_main"
+  printf '%s\n' "$ags_registry_body" > "$ags_seed/$ags_registry_rel"
+  printf '%s\n' "$ags_skill_body" > "$ags_seed/$ags_stored_skill/$ags_skill_file"
+  git -C "$ags_seed" init -q -b "$ags_main"
+  git -C "$ags_seed" add -A
+  project_git -C "$ags_seed" commit -q -m "$ags_seed_message"
+  git -C "$ags_seed" push -q "$ags_store_origin" "$ags_main"
+  git clone -q "$ags_store_origin" "$ags_store"
+  git -C "$ags_project" init -q
+  git -C "$ags_project" remote add "$ags_origin" "$ags_remote"
+  printf '%s\n' "$ags_roots_key" "  - $ags_work" > "$ags_home/$ags_config_dir_rel/$ags_config_file"
+  run_sync >/dev/null
+  [ -L "$ags_project/$ags_dot_claude/$ags_skills_rel" ]
+  printf '%s\n' "$ags_dirty_line" >> "$ags_store/$ags_registry_rel"
+  if run_sync >/dev/null 2>&1; then
+    printf '%s\n' "$ags_dirty_error" >&2
+    exit 1
+  fi
+)
+
+test_projects
+
+test_projects_sync
+
 test_policy_migration
 
 printf '%s\n' 'install tests passed'

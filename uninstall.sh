@@ -5,10 +5,11 @@ ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$ags_root/lib.sh"
 
 usage() {
-  printf '%s\n' 'Usage: ./uninstall.sh --agent codex|claude|cursor|all [--yes] [--force] [--dry-run]'
+  printf '%s\n' 'Usage: ./uninstall.sh --agent codex|claude|cursor|all [--scope user|project|all] [--yes] [--force] [--dry-run]'
 }
 
 ags_agent=''
+ags_scope=$ags_scope_user
 ags_yes=0
 ags_force=0
 ags_dry_run=0
@@ -16,6 +17,7 @@ ags_dry_run=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --agent) ags_agent=${2:?missing agent}; shift 2 ;;
+    --scope) ags_scope=${2:?missing scope}; shift 2 ;;
     --yes) ags_yes=1; shift ;;
     --force) ags_force=1; shift ;;
     --dry-run) ags_dry_run=1; shift ;;
@@ -24,7 +26,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-valid_agent "$ags_agent" || die '--agent is required'
+valid_scope "$ags_scope" || die '--scope must be user, project, or all'
+require_agent "$ags_scope" "$ags_agent"
 
 delete_path() {
   printf '%s\n' "remove: $1"
@@ -91,12 +94,36 @@ check_delete_root() {
   case "$ags_answer" in y|Y) ;; *) die 'aborted' ;; esac
 }
 
+# Xóa symlink project trỏ vào checkout projects và khôi phục bản gốc mà install --force đã backup.
+uninstall_projects() (
+  readonly ags_backup_glob='.agent-skills-backup.*'
+  project_links | while IFS= read -r ags_entry; do
+    delete_path "$ags_entry"
+  done
+  project_targets | while IFS='|' read -r _ ags_target; do
+    for ags_backup in "$ags_target"$ags_backup_glob; do
+      [ -e "$ags_backup" ] || [ -L "$ags_backup" ] || continue
+      if [ -e "$ags_target" ] || [ -L "$ags_target" ]; then
+        printf '%s\n' "skip: $ags_backup"
+        continue
+      fi
+      printf '%s\n' "restore: $ags_backup -> $ags_target"
+      [ "$ags_dry_run" -eq 1 ] || mv -- "$ags_backup" "$ags_target"
+    done
+  done
+)
+
 validate_skills
 validate_policies
-[ "$ags_agent" != all ] || check_delete_root
+[ "$ags_scope" = "$ags_scope_project" ] || [ "$ags_agent" != all ] || check_delete_root
 
-for ags_agent_name in $(agents_of "$ags_agent"); do
-  uninstall_agent "$ags_agent_name"
-done
+if [ "$ags_scope" != "$ags_scope_project" ]; then
+  for ags_agent_name in $(agents_of "$ags_agent"); do
+    uninstall_agent "$ags_agent_name"
+  done
+fi
+if [ "$ags_scope" != "$ags_scope_user" ]; then
+  uninstall_projects
+fi
 
-[ "$ags_agent" != all ] || delete_path "$ags_root"
+[ "$ags_scope" = "$ags_scope_project" ] || [ "$ags_agent" != all ] || delete_path "$ags_root"

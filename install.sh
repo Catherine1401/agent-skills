@@ -5,10 +5,11 @@ ags_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$ags_root/lib.sh"
 
 usage() {
-  printf '%s\n' 'Usage: ./install.sh --agent codex|claude|cursor|all [--mode symlink|copy] [--no-rules] [--force] [--prune] [--dry-run]'
+  printf '%s\n' 'Usage: ./install.sh --agent codex|claude|cursor|all [--scope user|project|all] [--mode symlink|copy] [--no-rules] [--force] [--prune] [--dry-run]'
 }
 
 ags_agent=''
+ags_scope=$ags_scope_user
 ags_mode='symlink'
 ags_rules=1
 ags_force=0
@@ -18,6 +19,7 @@ ags_dry_run=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --agent) ags_agent=${2:?missing agent}; shift 2 ;;
+    --scope) ags_scope=${2:?missing scope}; shift 2 ;;
     --mode) ags_mode=${2:?missing mode}; shift 2 ;;
     --no-rules) ags_rules=0; shift ;;
     --force) ags_force=1; shift ;;
@@ -28,7 +30,8 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-valid_agent "$ags_agent" || die '--agent is required'
+valid_scope "$ags_scope" || die '--scope must be user, project, or all'
+require_agent "$ags_scope" "$ags_agent"
 case "$ags_mode" in symlink|copy) ;; *) die '--mode must be symlink or copy' ;; esac
 
 backup_target() {
@@ -164,12 +167,38 @@ prune_agent() {
   done
 }
 
+# Symlink từng mục đồng bộ của checkout projects vào .claude của mọi project khớp.
+install_projects() {
+  if [ ! -d "$(projects_dir)" ]; then
+    [ "$ags_scope" = "$ags_scope_all" ] || die "missing projects checkout: $(projects_dir)"
+    printf '%s\n' "skip projects: missing $(projects_dir)"
+    return
+  fi
+  project_targets | while IFS='|' read -r ags_source ags_target; do
+    install_target "$ags_source" "$ags_target"
+  done
+  if [ "$ags_prune" -eq 1 ]; then
+    ags_known=$(project_targets | cut -d'|' -f2)
+    project_links | while IFS= read -r ags_link; do
+      if ! printf '%s\n' "$ags_known" | grep -Fxq -- "$ags_link"; then
+        printf '%s\n' "prune: $ags_link"
+        [ "$ags_dry_run" -eq 1 ] || rm -f -- "$ags_link"
+      fi
+    done
+  fi
+}
+
 validate_skills
 validate_policies
 
-for ags_agent_name in $(agents_of "$ags_agent"); do
-  install_agent "$ags_agent_name"
-  if [ "$ags_prune" -eq 1 ]; then
-    prune_agent "$ags_agent_name"
-  fi
-done
+if [ "$ags_scope" != "$ags_scope_project" ]; then
+  for ags_agent_name in $(agents_of "$ags_agent"); do
+    install_agent "$ags_agent_name"
+    if [ "$ags_prune" -eq 1 ]; then
+      prune_agent "$ags_agent_name"
+    fi
+  done
+fi
+if [ "$ags_scope" != "$ags_scope_user" ]; then
+  install_projects
+fi

@@ -1,6 +1,13 @@
 # Shared by install.sh, uninstall.sh and sync.sh. Requires ags_root to be set before sourcing.
 
 ags_manifest="$ags_root/manifest.yaml"
+ags_scope_user='user'
+ags_scope_project='project'
+ags_scope_all='all'
+ags_config_name='.claude'
+ags_projects_section='projects'
+ags_git_name='.git'
+ags_origin_remote='origin'
 
 die() {
   printf '%s\n' "error: $*" >&2
@@ -157,7 +164,7 @@ managed_rule_count() {
 # True when target is a symlink into this checkout, a copy identical to source, or a generated file carrying a policy marker.
 is_managed() {
   if [ -L "$2" ]; then
-    case "$(readlink "$2")" in "$ags_root"/*) return 0 ;; esac
+    case "$(readlink "$2")" in "$ags_root"/*|"$(projects_dir)"/*) return 0 ;; esac
     return 1
   fi
   [ -e "$2" ] || return 1
@@ -275,4 +282,137 @@ migrate_legacy_rules() (
       uninstall_managed_rule "$ags_target" "$ags_marker"
     done
   fi
+)
+
+valid_scope() {
+  case "$1" in "$ags_scope_user"|"$ags_scope_project"|"$ags_scope_all") return 0 ;; esac
+  return 1
+}
+
+# Scope project không cần --agent; các scope khác bắt buộc.
+require_agent() {
+  [ "$1" = "$ags_scope_project" ] || valid_agent "$2" || die '--agent is required'
+}
+
+projects_dir() (
+  readonly ags_projects_home_name='agent-skills-projects'
+  printf '%s\n' "${AGS_PROJECTS_DIR:-"$HOME/$ags_projects_home_name"}"
+)
+
+local_config() (
+  readonly ags_local_config_path='.config/agent-skills/local.yaml'
+  printf '%s\n' "${AGS_LOCAL_CONFIG:-"$HOME/$ags_local_config_path"}"
+)
+
+registry_file() (
+  readonly ags_registry_name='registry.yaml'
+  printf '%s/%s\n' "$(projects_dir)" "$ags_registry_name"
+)
+
+# In "id|giá trị" cho dòng "  key: value" và "giá trị" cho dòng "  - value" dưới một khóa gốc của yaml đơn giản.
+yaml_section() (
+  [ -f "$1" ] || return 0
+  awk -v section="$2" '
+    $0 ~ ("^" section ":[[:space:]]*$") { in_section = 1; next }
+    in_section && /^[^[:space:]]/ { exit }
+    in_section && /^  [^[:space:]]/ {
+      line = $0
+      sub(/^  /, "", line)
+      sub(/[[:space:]]*$/, "", line)
+      if (line ~ /^- /) { sub(/^- /, "", line); print line; next }
+      split_at = index(line, ": ")
+      if (split_at > 0) print substr(line, 1, split_at - 1) "|" substr(line, split_at + 2)
+    }
+  ' "$1"
+)
+
+# Đưa remote https và ssh của cùng một repo về dạng "host/path".
+normalize_remote() (
+  printf '%s\n' "$1" | sed -e 's#^[a-z+]*://##' -e 's#^[^@/]*@##' -e 's#:#/#' -e 's#\.git$##' -e 's#/$##'
+)
+
+# Các mục runtime của .claude trong project không bao giờ được đồng bộ.
+is_project_runtime() (
+  readonly ags_runtime_names='settings.local.json jobs worktrees scheduled_tasks.* checkpoints mailbox routines agent-registry.json agent-memory-local first-run assistant-daemon-state.json'
+  for ags_runtime_name in $ags_runtime_names; do
+    case "$1" in $ags_runtime_name) return 0 ;; esac
+  done
+  return 1
+)
+
+# Các dòng "id|remote đã chuẩn hóa" lấy từ registry.
+registry_remotes() (
+  yaml_section "$(registry_file)" "$ags_projects_section" | while IFS='|' read -r ags_id ags_url; do
+    printf '%s|%s\n' "$ags_id" "$(normalize_remote "$ags_url")"
+  done
+)
+
+# Các dòng "id|path" của repo dưới các roots cục bộ có origin nằm trong registry.
+scan_projects() (
+  readonly ags_scan_depth=2 ags_roots_section='roots'
+  ags_remotes=$(registry_remotes)
+  [ -n "$ags_remotes" ] || return 0
+  yaml_section "$(local_config)" "$ags_roots_section" | while IFS= read -r ags_root_dir; do
+    [ -d "$ags_root_dir" ] || continue
+    find "$ags_root_dir" -maxdepth "$ags_scan_depth" -name "$ags_git_name" 2>/dev/null | while IFS= read -r ags_git_entry; do
+      ags_repo=$(dirname -- "$ags_git_entry")
+      ags_origin=$(git -C "$ags_repo" remote get-url "$ags_origin_remote" 2>/dev/null) || continue
+      ags_origin=$(normalize_remote "$ags_origin")
+      printf '%s\n' "$ags_remotes" | while IFS='|' read -r ags_id ags_remote; do
+        if [ "$ags_remote" = "$ags_origin" ]; then
+          printf '%s|%s\n' "$ags_id" "$ags_repo"
+        fi
+      done
+    done
+  done
+)
+
+# Các dòng "id|path": repo đã quét, overrides cục bộ và mọi worktree của chúng.
+project_paths() (
+  readonly ags_overrides_section='overrides'
+  ags_found=$({ scan_projects; yaml_section "$(local_config)" "$ags_overrides_section"; } | while IFS='|' read -r ags_id ags_path; do
+    [ -d "$ags_path" ] || continue
+    printf '%s|%s\n' "$ags_id" "$ags_path"
+    git -C "$ags_path" worktree list --porcelain 2>/dev/null | sed -n 's/^worktree //p' | while IFS= read -r ags_worktree; do
+      printf '%s|%s\n' "$ags_id" "$ags_worktree"
+    done
+  done)
+  [ -z "$ags_found" ] || printf '%s\n' "$ags_found" | sort -u
+)
+
+# Thư mục cấu hình đã lưu của một project trong checkout projects.
+project_store_dir() (
+  readonly ags_projects_subdir='projects'
+  printf '%s/%s/%s/%s\n' "$(projects_dir)" "$ags_projects_subdir" "$1" "$ags_config_name"
+)
+
+# Liệt kê mọi mục (kể cả file ẩn và symlink) trực tiếp trong một thư mục.
+config_entries() (
+  for ags_entry in "$1"/* "$1"/.[!.]*; do
+    [ -e "$ags_entry" ] || [ -L "$ags_entry" ] || continue
+    printf '%s\n' "$ags_entry"
+  done
+)
+
+# Các dòng "source|target": từng mục đồng bộ của projects/<id>/.claude cho mọi path khớp.
+project_targets() (
+  project_paths | while IFS='|' read -r ags_id ags_path; do
+    ags_config_dir=$(project_store_dir "$ags_id")
+    [ -d "$ags_config_dir" ] || continue
+    config_entries "$ags_config_dir" | while IFS= read -r ags_entry; do
+      ags_name=$(basename -- "$ags_entry")
+      is_project_runtime "$ags_name" && continue
+      printf '%s|%s\n' "$ags_entry" "$ags_path/$ags_config_name/$ags_name"
+    done
+  done
+)
+
+# Các symlink trong .claude của từng project đang trỏ vào checkout projects.
+project_links() (
+  project_paths | while IFS='|' read -r _ ags_path; do
+    config_entries "$ags_path/$ags_config_name" | while IFS= read -r ags_entry; do
+      [ -L "$ags_entry" ] || continue
+      case "$(readlink "$ags_entry")" in "$(projects_dir)"/*) printf '%s\n' "$ags_entry" ;; esac
+    done
+  done
 )
