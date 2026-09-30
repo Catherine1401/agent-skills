@@ -48,6 +48,7 @@ is installed for all three agents.
 | `refactor` | Delegate rule verification of every changed file type to a `verify` subagent with a separate context. |
 | `test` | Guide users through testing changed code; provide mocks when the user says required APIs or backend dependencies are unavailable. |
 | `ok` | Approve the agent's latest pending confirmation request, or confirm its latest result as verified when it asks the user to check. |
+| `video` | Read a video file (`.mp4`, `.mov`, `.webm`) by extracting frames with `ffmpeg` and summarizing what it shows, e.g. a QA bug recording. |
 
 Invoke `$refactor` to request verification. The skill creates a `verify`
 subagent at runtime; it does not install a subagent configuration or a separate
