@@ -39,9 +39,9 @@ is installed for all three agents.
 | --- | --- |
 | `commit` | Prepare task-scoped commits and wait for user approval. |
 | `user-policy` | Update shared policy, test it, and install it for all three agents. |
-| `user-policy-pj` | Update the current project's own policy file (`CLAUDE.md`, or `AGENTS.md` when absent) with project-specific rules; never edits user-level policy. |
+| `user-policy-pj` | Update the current project's own policy file (root `CLAUDE.md`, else `.claude/CLAUDE.md`, else `AGENTS.md`) with project-specific rules; never edits user-level policy. |
 | `skill-creator` | Create or update portable skills. |
-| `skill-creator-pj` | Create or update project-local skills; the generated project skills are not registered or installed by this repository. |
+| `skill-creator-pj` | Create or update project-local skills; generated project skills are not registered in `manifest.yaml`; `.claude` ones sync through the private projects repository (see Project-level config). |
 | `use` | Reuse complete skill instructions already embedded in the prompt. |
 | `report` | Save or update task handoffs in `.docs/context/`. |
 | `learn` | Save verified lessons in `.docs/learn/`, one file per conversation. |

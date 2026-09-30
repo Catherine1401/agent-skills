@@ -4,7 +4,7 @@
 - `manifest.yaml` is the install manifest. It is the source of which skills and policies are installed.
 - `skills/<name>/SKILL.md` is the canonical implementation of a skill.
 - Every manifest skill is installed for Codex, Claude Code, and Cursor. Read `manifest.yaml` for the current list; do not maintain a second list here.
-- `skill-creator-pj` reuses `skill-creator` with project-local placement; generated project skills are not registered or installed by this repository.
+- `skill-creator-pj` reuses `skill-creator` with project-local placement; generated project skills are not registered in `manifest.yaml`; those under `.claude` sync only through the private projects checkout, `.codex/skills` ones do not sync.
 - `refactor` delegates rule verification for every file type to a fresh-context, read-only subagent named `verify`; `skills/refactor/references/verify.md` is its verification procedure. No subagent configuration is installed.
 - `shared-rules/*.md` is the canonical shared policy; `adapters/` holds agent-specific representations. `shared-rules/user.md` holds the user-level rules for every agent.
 - `lib.sh` holds the logic shared by `install.sh`, `uninstall.sh`, and `sync.sh`; add shared logic there, never duplicate it across scripts.
