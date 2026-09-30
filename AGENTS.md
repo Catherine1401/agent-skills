@@ -8,7 +8,7 @@
 - `refactor` delegates rule verification for every file type to a fresh-context, read-only subagent named `verify`; `skills/refactor/references/verify.md` is its verification procedure. No subagent configuration is installed.
 - `shared-rules/*.md` is the canonical shared policy; `adapters/` holds agent-specific representations. `shared-rules/user.md` holds the user-level rules for every agent.
 - `lib.sh` holds the logic shared by `install.sh`, `uninstall.sh`, and `sync.sh`; add shared logic there, never duplicate it across scripts.
-- `install.sh` validates the manifest and installs selected entries by symlink or copy; policies are written as managed marker blocks in `CLAUDE.md`/`AGENTS.md` and as Cursor rules. `--prune` removes symlinks of skills no longer in the manifest. `--scope user|project|all` selects user-level entries (default), project-level entries, or both; scope `project` needs no `--agent`.
+- `install.sh` validates the manifest and installs selected entries by symlink or copy; policies are written as managed marker blocks in `CLAUDE.md`/`AGENTS.md` and as Cursor rules. `--prune` removes symlinks of skills no longer in the manifest. `--scope user|project|all` selects user-level entries (default), project-level entries, or both; scope `project` needs no `--agent`. Scope `all` skips a missing projects checkout; scope `project` requires it.
 - `uninstall.sh` reverses the install for the selected agents and scope and restores `*.agent-skills-backup.*`. With `--agent all` and a scope other than `project` it also deletes this checkout.
 - `sync.sh` fast-forwards a clean `main` checkout, fast-forwards the projects checkout when it is a Git repository, then runs the installer with `--scope all --prune`.
 - Project-level config (`.claude/` contents of each project) lives in a separate private projects checkout, `~/agent-skills-projects` (override with `AGS_PROJECTS_DIR`): `registry.yaml` maps `projects.<id>` to the project's `origin` URL, and `projects/<id>/.claude/` holds the synced entries. This repository holds no project content.
@@ -42,4 +42,5 @@
 - The sync test builds its fixture with `git archive HEAD`; commit script changes, or test a committed snapshot, before relying on it to exercise them. `test_projects_sync` overlays the working tree onto its fixture clone instead.
 - Edits made to installed policy blocks and generated Cursor rules are overwritten on the next install; change the source in `shared-rules/` instead.
 - `.docs/` is local-only and must remain untracked.
+- Keep `README.md`, `AGENTS.md`, and `CONTRIBUTING.md` under 100 lines each.
 - Use the `commit` skill for commits: stage only task hunks, split independent tasks, propose exact hunks and message, then wait for user approval.

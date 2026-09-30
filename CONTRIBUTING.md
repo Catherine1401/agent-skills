@@ -8,7 +8,7 @@ Contributions that improve portability, safety, or agent usefulness are welcome.
 4. Write skill and policy content in English. Retain only instructions that change an agent decision; link conditional references rather than duplicating them.
 5. Run `./tests/test-install.sh` and include its result in the pull request.
 
-Read [AGENTS.md](AGENTS.md) before changing the repository. Keep each pull request focused and explain the behavior it changes.
+Read [AGENTS.md](AGENTS.md), including its documentation length limit, before changing the repository. Keep each pull request focused and explain the behavior it changes.
 
 When changing installation, uninstall, sync, or manifest validation, reuse shared logic in `lib.sh` and extend `tests/test-install.sh`. Its sync fixture uses `git archive HEAD`; test a committed snapshot to exercise script changes not yet committed in the working checkout. Run uninstall tests only on repository copies.
 
