@@ -511,11 +511,12 @@ test_projects_sync() (
   mkdir -p "$ags_home/$ags_config_dir_rel" "$ags_project" "$ags_seed/$ags_stored_skill"
   git init -q --bare -b "$ags_main" "$ags_tools_origin"
   git init -q --bare -b "$ags_main" "$ags_store_origin"
-  git clone -q "$ags_root" "$ags_tools" 2>/dev/null
+  mkdir -p "$ags_tools"
+  git -C "$ags_tools" init -q -b "$ags_main"
   (cd "$ags_root" && tar --exclude=.git -cf - .) | (cd "$ags_tools" && tar -xf -)
   git -C "$ags_tools" add -A
-  project_git -C "$ags_tools" commit -q --allow-empty -m "$ags_snapshot_message"
-  git -C "$ags_tools" remote set-url "$ags_origin" "$ags_tools_origin"
+  project_git -C "$ags_tools" commit -q -m "$ags_snapshot_message"
+  git -C "$ags_tools" remote add "$ags_origin" "$ags_tools_origin"
   git -C "$ags_tools" push -q "$ags_origin" "$ags_main"
   printf '%s\n' "$ags_registry_body" > "$ags_seed/$ags_registry_rel"
   printf '%s\n' "$ags_skill_body" > "$ags_seed/$ags_stored_skill/$ags_skill_file"
