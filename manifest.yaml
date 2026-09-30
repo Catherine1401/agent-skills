@@ -25,3 +25,5 @@ skills:
     source: skills/test
   ok:
     source: skills/ok
+  video:
+    source: skills/video
