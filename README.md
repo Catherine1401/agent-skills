@@ -65,9 +65,57 @@ cd agent-skills
 ./sync.sh --agent all
 ```
 
-`sync.sh` fast-forwards from `origin/main` and refreshes symlinked installs. It
-also removes symlinks of skills that left `manifest.yaml`. It stops when local
+`sync.sh` fast-forwards from `origin/main` (and the projects checkout, when
+present) and refreshes symlinked installs at user and project scope. It also
+removes symlinks of skills that left `manifest.yaml`. It stops when local
 changes or divergent history would make an update unsafe.
+
+## Project-level config
+
+Each project's own `.claude/` entries (skills, `CLAUDE.md`, commands, hooks,
+`settings.json`, and so on) sync across machines the same way as user-level
+skills. They live in a separate **private** repository checked out at
+`~/agent-skills-projects` (override with `AGS_PROJECTS_DIR`); this public
+repository never holds project content.
+
+```text
+registry.yaml                  # projects.<id>: <origin URL of the project>
+projects/<id>/.claude/...      # entries symlinked into <project>/.claude/
+```
+
+Each machine declares where to look in an untracked
+`~/.config/agent-skills/local.yaml` (override with `AGS_LOCAL_CONFIG`):
+
+```yaml
+roots:
+  - /home/you                  # the root and its direct subdirectories are scanned;
+                               # a repository matches when its normalized `origin`
+                               # is in the registry
+overrides:
+  my-project: /path/to/project # for a project without a remote or outside the roots
+```
+
+Every match also expands through `git worktree list`; a project that is absent
+on a machine is skipped. One `./sync.sh --agent all` updates user and every
+project at once.
+
+Runtime entries (`settings.local.json`, `jobs`, `worktrees`, `scheduled_tasks.*`,
+`checkpoints`, `mailbox`, `routines`, `agent-registry.json`, `agent-memory-local`,
+`first-run`, `assistant-daemon-state.json`) are never imported, linked, or pruned.
+
+Add a project:
+
+```sh
+./import-project.sh --id <id> --path <project> [--dry-run]
+git -C ~/agent-skills-projects add -A   # then commit and push the projects repository
+./install.sh --scope project --force    # first run only: backs up the real entries it replaces
+```
+
+`import-project.sh` copies the project's non-runtime entries, registers its
+`origin`, never overwrites an existing entry, and never commits or pushes.
+`sync.sh` does not pass `--force`, so the first install on each machine needs the
+command above. `./uninstall.sh --scope project` removes the links and restores
+the backups.
 
 ## Add a skill
 
@@ -106,11 +154,12 @@ frontmatter file joined with `source` at install time).
 ## Installer options
 
 ```text
-./install.sh --agent codex|claude|cursor|all \
+./install.sh --agent codex|claude|cursor|all [--scope user|project|all] \
   [--mode symlink|copy] [--no-rules] [--force] [--prune] [--dry-run]
 ```
 
-Use `--dry-run` to inspect changes before installation. `--force` backs up an
+`--scope` defaults to `user`; `project` links project-level config (symlinks unless `--mode copy`) and needs
+no `--agent`. Use `--dry-run` to inspect changes before installation. `--force` backs up an
 existing target before replacing it. `--prune` removes symlinks into this
 checkout whose skill is no longer in `manifest.yaml`. Override configuration locations with
 `CODEX_HOME`, `CLAUDE_CONFIG_DIR`, or `CURSOR_CONFIG_DIR`.
@@ -118,12 +167,13 @@ checkout whose skill is no longer in `manifest.yaml`. Override configuration loc
 ## Uninstall
 
 ```text
-./uninstall.sh --agent codex|claude|cursor|all [--yes] [--force] [--dry-run]
+./uninstall.sh --agent codex|claude|cursor|all [--scope user|project|all] [--yes] [--force] [--dry-run]
 ```
 
 Removes installed skills, Cursor rules, and managed policy blocks, then restores
 any `*.agent-skills-backup.*` that `--force` created. A modified copy is skipped.
-`--agent all` also deletes this checkout: it asks for confirmation (`--yes` skips
+`--scope project` removes only project links and restores their backups.
+`--agent all` (with a scope other than `project`) also deletes this checkout: it asks for confirmation (`--yes` skips
 it) and refuses uncommitted or unpushed work unless `--force`. Use `--dry-run`
 first; it changes nothing.
 

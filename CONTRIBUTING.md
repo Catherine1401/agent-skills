@@ -14,4 +14,6 @@ When changing installation, uninstall, sync, or manifest validation, reuse share
 
 The installer validates manifest entries and source existence, not skill frontmatter or behavior. Validate those separately; an installer test pass does not prove that an agent can load or correctly execute the skill.
 
+Project-level sync changes (`--scope`, the `lib.sh` project helpers, `import-project.sh`) must extend `test_projects` and `test_projects_sync`. Never commit project content or local paths here: project config belongs in the private projects repository, and the per-machine `local.yaml` stays untracked. Run project-scope `uninstall.sh` tests only against temporary homes.
+
 For agent-authored changes, use `refactor` to delegate rule verification to its read-only `verify` subagent. Keep `.docs/` handoffs and learning notes untracked. Follow the commit approval policy in [AGENTS.md](AGENTS.md).
