@@ -2,6 +2,7 @@
 
 - Respond in Vietnamese, including plans, artifacts, and local-only documents. Write skills, policies, and all GitHub-bound content (including tracked files) in English, except code comments.
 - Write code comments in Vietnamese; limit each comment to one line, written clearly enough that one line conveys the full information, and match the code file's indentation.
+- Never guess: back every claim with concrete evidence (tool output, code, logs, test results). Report any claim without evidence to the user as an assumption, then verify it yourself with a real test, and report the assumption, the confirmation result, and the evidence together. Never hand an assumption to the user to verify.
 - Complete authorized work within scope; ask only for missing decision-critical information or new authorization. For a question instead of a change request, answer factually, state deviations from these rules, propose concrete options by case, and ask which to apply; edit nothing until the user chooses. Commit approval below remains mandatory.
 - Ask the user only through a selection UI with predefined options; never ask questions in prose or request manually typed answers.
 - Write code only when needed; use the simplest implementation. Give every function, method, class, module, script, and workflow one responsibility; split otherwise.
