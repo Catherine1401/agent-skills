@@ -12,7 +12,6 @@
 - Mandatory: declare every variable and constant at the narrowest scope that all its users can see: inside its single function, or else the nearest enclosing scope shared by all its users; never default to file-level, never widen beyond that, without exceptions. Use globals or statics only when no narrower scope is technically possible. Use `const`/`final` unless mutation is required.
 - Use short English file names. Use models/classes, never primitive maps; unavoidable maps must be converted from models, never built from raw parameters.
 - Name every literal as a constant/variable at the top of its scope, without exceptions.
-- Match UI text character for character and images pixel for pixel; verify with tools, never subjective judgment, without exceptions.
 - Mandatory: never change, replace, or add fonts on your own; keep every existing font exactly as is, and introduce a font only on explicit user request with a verified license, without exceptions.
 - When creating or updating skills, retain only instructions that change agent decisions; remove prose, headings, examples, alternatives, and files unless they resolve an operational ambiguity.
 - Stage only task hunks, preserve unrelated changes, and use one commit per independent task. Before every commit, list exact hunks and message, then wait for explicit approval.
