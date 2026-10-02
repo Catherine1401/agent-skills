@@ -13,8 +13,6 @@ skills:
     source: skills/skill-creator
   skill-creator-pj:
     source: skills/skill-creator-pj
-  use:
-    source: skills/use
   report:
     source: skills/report
   learn:

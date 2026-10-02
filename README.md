@@ -74,7 +74,8 @@ current scan.
 `manifest.yaml` is the source of installed skill and policy names. Each skill
 lives in `skills/<name>/SKILL.md` with matching YAML `name` and non-empty
 `description`. Skill and policy content is in English. The installer validates
-manifest paths and source existence, but not frontmatter or agent behavior.
+manifest paths and source existence, but not frontmatter or agent behavior. After
+a skill is removed, run `./install.sh --agent all --prune` to remove its managed symlinks, including dangling ones; installed copies require separate removal.
 
 `shared-rules/user.md` is the canonical user policy. Installation writes managed
 blocks to `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`, and generates
@@ -92,8 +93,7 @@ blocks are overwritten. Agent-specific representations live in `adapters/`.
 `--scope` defaults to `user`; project scope needs no `--agent`. For install,
 `--force` backs up existing targets; `--prune` removes obsolete managed symlinks.
 Uninstall restores backups and skips modified copies. With `--agent all` outside
-project scope, uninstall also deletes this checkout after
-confirmation and refuses uncommitted or unpushed work unless forced. Run it only
-on a copy when testing.
+project scope, uninstall also deletes this checkout after confirmation and refuses
+uncommitted or unpushed work unless forced. Run it only on a copy when testing.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before changing the repository. Licensed under [MIT](LICENSE) © 2026 Catherine1401.

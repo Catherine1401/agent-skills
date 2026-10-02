@@ -21,10 +21,12 @@ HOME="$ags_tmp" CODEX_HOME="$ags_tmp/.codex" CLAUDE_CONFIG_DIR="$ags_tmp/.claude
 [ "$(readlink "$ags_tmp/.codex/skills/skill-creator")" = "$ags_root/skills/skill-creator" ]
 [ -L "$ags_tmp/.claude/skills/skill-creator" ]
 [ -L "$ags_tmp/.cursor/skills/skill-creator" ]
-[ -L "$ags_tmp/.codex/skills/use" ]
-[ "$(readlink "$ags_tmp/.codex/skills/use")" = "$ags_root/skills/use" ]
-[ -L "$ags_tmp/.claude/skills/use" ]
-[ -L "$ags_tmp/.cursor/skills/use" ]
+(
+  readonly ags_removed_codex="$ags_tmp/.codex/skills/use" ags_removed_claude="$ags_tmp/.claude/skills/use" ags_removed_cursor="$ags_tmp/.cursor/skills/use"
+  for ags_removed_target in "$ags_removed_codex" "$ags_removed_claude" "$ags_removed_cursor"; do
+    [ ! -e "$ags_removed_target" ] && [ ! -L "$ags_removed_target" ]
+  done
+)
 [ -L "$ags_tmp/.codex/skills/report" ]
 [ "$(readlink "$ags_tmp/.codex/skills/report")" = "$ags_root/skills/report" ]
 [ -L "$ags_tmp/.claude/skills/report" ]
@@ -60,7 +62,10 @@ grep -Fqx '## User policy' "$ags_tmp/.cursor/rules/user.mdc"
 
 HOME="$ags_tmp/copy-home" CLAUDE_CONFIG_DIR="$ags_tmp/copy-home/.claude" "$ags_root/install.sh" --agent claude --mode copy --no-rules
 [ -f "$ags_tmp/copy-home/.claude/skills/commit/SKILL.md" ]
-[ -f "$ags_tmp/copy-home/.claude/skills/use/SKILL.md" ]
+(
+  readonly ags_removed_copy="$ags_tmp/copy-home/.claude/skills/use"
+  [ ! -e "$ags_removed_copy" ] && [ ! -L "$ags_removed_copy" ]
+)
 [ -f "$ags_tmp/copy-home/.claude/skills/report/SKILL.md" ]
 
 cp -R "$ags_root" "$ags_tmp/multi-repo"

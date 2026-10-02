@@ -10,6 +10,8 @@ Contributions that improve portability, safety, or agent usefulness are welcome.
 
 Read [AGENTS.md](AGENTS.md), including its documentation length limit, before changing the repository. Keep each pull request focused and explain the behavior it changes.
 
+To remove a skill, delete its source directory and manifest entry, and update installation assertions. Verify fresh symlink and copy installs omit it; `--prune` removes obsolete managed symlinks, including dangling ones, but retains installed copies.
+
 When changing installation, uninstall, sync, or manifest validation, reuse shared logic in `lib.sh` and extend `tests/test-install.sh`. Its sync fixture uses `git archive HEAD`; test a committed snapshot to exercise script changes not yet committed in the working checkout. Run uninstall tests only on repository copies.
 
 The installer validates manifest entries and source existence, not skill frontmatter or behavior. Validate those separately; an installer test pass does not prove that an agent can load or correctly execute the skill.

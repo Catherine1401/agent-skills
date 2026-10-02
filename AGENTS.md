@@ -23,6 +23,7 @@
 ## Change Routes
 
 - Add a skill: create `skills/<name>/SKILL.md`; add matching `skills.<name>.source` to `manifest.yaml`; add adapter or policy only when the target agent needs one.
+- Remove a skill: delete its source and manifest entry; update installation assertions. `install.sh --agent all --prune` removes obsolete managed symlinks, including dangling ones; installed copies require separate removal.
 - Add a policy: add `policies.<name>` to `manifest.yaml` with `source` under `shared-rules/` and either `cursor` (ready `.mdc`) or `cursor_header` (frontmatter joined with `source` at install time); no script change.
 - Change a shared convention: update its canonical file in `shared-rules/`, then update the required adapter.
 - Change installation, uninstall, sync, or manifest validation: update the scripts, keeping shared logic in `lib.sh`, and extend `tests/test-install.sh` for the new behavior.
