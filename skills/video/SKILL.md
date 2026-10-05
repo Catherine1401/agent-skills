@@ -1,6 +1,7 @@
 ---
 name: video
 description: Read a video file (.mp4/.mov/.webm) by extracting frames with ffmpeg and summarizing what it shows, e.g. a QA bug recording. Use when given a video path; not for still images or live app testing.
+context: fork
 ---
 
 - Require `ffmpeg`; if missing, report it and stop. Install only with user approval, preferring a no-sudo static build.
