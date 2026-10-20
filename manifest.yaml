@@ -25,3 +25,5 @@ skills:
     source: skills/ok
   video:
     source: skills/video
+  be-ms:
+    source: skills/be-ms
