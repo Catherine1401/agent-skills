@@ -29,3 +29,5 @@ skills:
     source: skills/be-ms
   test-driven-development:
     source: skills/test-driven-development
+  sync:
+    source: skills/sync
