@@ -5,7 +5,8 @@ description: Draft a message to send to the backend (BE) team about an issue, re
 
 - Write in Vietnamese, as plain text ready to paste; deliver it in the reply, never send it anywhere.
 - No personal pronouns or forms of address (tôi, mình, anh, chị, em, bạn, BE ơi…), no greetings, thanks or sign-off; use impersonal sentences that state the issue.
-- Structure, each part only when it has content: one-line title with the ticket key → symptom (env, platform, app version, account/time, observed vs expected) → what is already verified on the app side, with evidence → numbered questions or requests for BE, each answerable on its own.
-- Full context: a BE reader without the conversation must understand it; include the exact endpoint, fields, values, times and log lines needed to look the case up.
-- Short and simple: one fact per line, no explanations of app internals beyond what BE needs, no speculation presented as fact; state unverified points as assumptions.
+- Structure: bold title (ticket key if known) → `Hiện trạng:` one line observed + one line requested → numbered sections per endpoint, each with `Request:` and `Response:` code blocks (method + full path, complete JSON with realistic values) → `Cần BE xác nhận` only for points the app cannot decide; omit any empty part.
+- The app owns field names, enum values and payload shape: state them as requirements; never ask BE to confirm or choose them.
+- Read the app's current mappers and data sources first; reuse their existing field names and endpoints.
+- Omit app-internal findings, root-cause analysis, verification notes and prose explanations; one fact per line.
 - Mask secrets and card data (PAN → first 4 + last 4, no full tokens, passwords or CVV values).
