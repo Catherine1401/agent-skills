@@ -31,3 +31,5 @@ skills:
     source: skills/test-driven-development
   sync:
     source: skills/sync
+  quizz:
+    source: skills/quizz
